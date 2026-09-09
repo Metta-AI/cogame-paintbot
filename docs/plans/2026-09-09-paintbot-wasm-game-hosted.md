@@ -73,3 +73,18 @@ in the static viewer on softmax.com/paintbot-wasm; the champion seats call
 the platform sidecar (seat logs show live model output).
 Blocked on the user: creating the public GitHub repo Metta-AI/cogame-paintbot
 (the permission classifier refused both `gh repo create` and `gh api`).
+
+## Campaign switch (2026-09-09, later)
+
+The user wants the league in campaign mode (the territory board with an LLM
+strategist, like Paintbot "Campaign"), not the Season 2 ladder. Campaign
+cells are settled with classic 1v1 / 2v2 / 4ffa matches on Sprite mask
+seats, so: the classic `players/baseline` bot is compiled to wasm
+(`policies/wasm/baseline`, three tunings: baseline, baseline-rusher,
+baseline-guard) and becomes the bundled player set; the manifest publishes
+1v1/2v2/4ffa plus battle-royale-s2 and certifies a classic 2v2; the Season 2
+starters stay as uploaded policies. The league settings are replaced with a
+copy of the Campaign league's (ladder disabled, campaign block with
+variant_ids 1v1/2v2/4ffa, Sonnet 5 strategist, 300 s rounds), the Season 2
+memberships are retired, and the baseline builds become the champions
+(daveey: baseline, daveey-1: baseline-rusher) and filler (baseline-guard).

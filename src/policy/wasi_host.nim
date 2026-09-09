@@ -24,9 +24,14 @@
 ## or budget exhaustion is terminal for the instance: the host reports it
 ## and the policy-host process exits.
 
-import std/[atomics, os, strutils]
+import std/[atomics, os]
 import ../shell/wasmtime_c
 import ./llm_proxy
+
+when defined(linux):
+  # The static libwasmtime needs libm (tokio's stats call pow) and the
+  # pthread/dl symbols the game binary picks up from its other dependencies.
+  {.passL: "-lm -lpthread -ldl".}
 
 const
   PolicyMaxMemoryBytes* = 64 * 1024 * 1024

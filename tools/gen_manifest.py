@@ -45,6 +45,10 @@ def main() -> int:
         "env": {
             "ANTHROPIC_API_KEY_URI": "secret://coworld/paintbot-wasm/anthropic_api_key",
         },
+        # Game-hosted seats share the game container's reservation: sixteen
+        # policy-host processes measured at ~76 MiB RSS each (a wasmtime
+        # engine plus a ~700 KiB starter module) on top of the engine itself.
+        "resources": {"requests": {"cpu": "3", "memory": "4Gi"}},
     }
     game["protocols"] = {
         "player": {"type": "uri", "value": f"{REPO_URL}/blob/main/docs/POLICY_WASM.md"},

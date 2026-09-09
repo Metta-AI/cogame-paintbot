@@ -99,3 +99,4 @@ exp/champion/
 
 # paintbot-wasm build products
 policies/wasm/.build/
+policies/wasm/dist/

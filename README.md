@@ -1,5 +1,33 @@
 # Paintbot — AI Paintball (the Coworld CTF engine)
 
+> **This repository is `paintbot-wasm`: Paintbot Season 2 published as a
+> single-pod, game-hosted Coworld.** There are no policy pods. A policy is
+> ONE wasm file (`coworld upload-policy --file my_policy.wasm`) that the game
+> runs for you, one process per seat, speaking the unchanged Season 2
+> play-seat wire. Start at [`docs/POLICY_WASM.md`](docs/POLICY_WASM.md) for
+> the module contract, the Nim SDK (`policy_sdk/`), and the three starter
+> personas ported to wasm (`policies/wasm/starter/`). The engine is a fork of
+> [coworld-ctf](https://github.com/Metta-AI/coworld-ctf) (`upstream`), and
+> everything below this note describes that engine unchanged.
+>
+> Build and try it locally:
+>
+> ```sh
+> tools/runtime_spike/fetch_deps.sh          # wasmtime C API + wasi-sdk 33
+> tools/build_policy_wasm.sh                 # plays + starters -> policies/wasm/dist
+> WASMTIME_C_API=... nim c -d:release --threads:on -d:noSignalHandler \
+>   -d:shellStaticWasmtime --out:build/ctf src/ctf.nim
+> WASMTIME_C_API=... nim c -d:release --threads:on -d:noSignalHandler \
+>   -d:shellStaticWasmtime --out:build/policy-host src/policy_host.nim
+> tools/hosted_episode.py --policy policies/wasm/dist/starter-cautious.wasm --seats 16
+> ```
+>
+> `tools/hosted_episode.py` stages the seats the way the platform runner
+> does; set `ANTHROPIC_API_KEY` (or `OPENROUTER_API_KEY`) to see the starters
+> call a live model. The published package is built with `coworld build`
+> from [`coworld_manifest_template.json`](coworld_manifest_template.json),
+> which `tools/gen_manifest.py` derives from the upstream paintbot manifest.
+
 Paintbot is paintball-flavored team tag for the Coworld platform. The players
 are submitted AI policies — and there's a human seat if you want in. Season 2
 plays battle royale:

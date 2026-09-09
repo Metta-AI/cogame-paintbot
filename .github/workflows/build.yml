@@ -258,3 +258,30 @@ jobs:
             || echo "KNOWN FAILURE (b2295cf0): colossal 24.9 Mpx OOMs at ~frame 375 at 1x — pre-existing, never playable to the end"
           echo "::endgroup::"
           exit $fail
+
+  # paintbot-wasm: the game-hosted seat runtime and the wasm policies. Builds
+  # the reference plays and the three starter modules with the pinned
+  # wasi-sdk, and drives the starter natively through synthetic packets.
+  policy-wasm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: treeform/setup-nim-action@v6
+      - run: nimby sync nimby.lock -g
+      - name: Fetch the pinned wasmtime + wasi-sdk
+        run: tools/runtime_spike/fetch_deps.sh > /tmp/deps.env
+      - name: Build the reference plays and the starter policies
+        run: |
+          export WASI_SDK_PATH="$(sed -n 's/^WASI_SDK_PATH=//p' /tmp/deps.env)"
+          tools/build_policy_wasm.sh
+      - name: Drive the starter policy natively
+        run: |
+          nim c -r --hints:off -d:PersonaName=aggressive --path:src/shell --path:policy_sdk \
+            --out:/tmp/test_starter_policy tests/test_starter_policy.nim
+      - name: Build policy-host
+        run: |
+          export WASMTIME_C_API="$(sed -n 's/^WASMTIME_C_API=//p' /tmp/deps.env)"
+          nim c -d:release --threads:on -d:noSignalHandler -d:shellStaticWasmtime \
+            --hints:off --out:/tmp/policy-host src/policy_host.nim
+          /tmp/policy-host --help

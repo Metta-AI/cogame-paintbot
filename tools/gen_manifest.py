@@ -98,7 +98,10 @@ def main() -> int:
         "seed": 679961,
     })
     certification = {
-        "players": [{"player_id": "starter-cautious"} for _ in range(CERT_SEATS)],
+        # Every bundled player must be seated (players-run), so the fixture
+        # cycles the three personas across the sixteen seats.
+        "players": [{"player_id": f"starter-{PERSONAS[slot % len(PERSONAS)]}"}
+                    for slot in range(CERT_SEATS)],
         "game_config": cert_config,
     }
 

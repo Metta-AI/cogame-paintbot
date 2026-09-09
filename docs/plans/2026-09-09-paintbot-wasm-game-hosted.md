@@ -62,7 +62,14 @@ Done locally: policy-host + hosted seats (16-seat episodes, invalid-file
 failure path, player_status.json), the SDK, the echo policy, the three starter
 personas as wasm (canned and live-model runs verified through the Anthropic
 route), manifest/compose/Dockerfile, unit tests, README, CI job.
-Next: `coworld build` (Docker), `coworld run-episode`, `coworld certify`,
-upload, secret, league, champions, verification on softmax.com.
+Live: `paintbot-wasm:0.1.1` is canonical (cow_3bc29029-afc9-40f5-bef8-78572bce4e11)
+after local and hosted certification; league "Paintbot (wasm)"
+(league_55906ee4-646a-4082-b6d4-46f2303c4c7c, division
+div_82e2b9a9-21b9-48a4-b264-21f149c5379c) runs battle-royale-s2 with team_n /
+16 teams at the small-field cadence (288 min, $15/day, 100-credit pool + drip).
+Champions: daveey (starter-cautious v1), daveey-1 (starter-aggressive v1);
+filler: starter-collaborative v1. Round 1 completed with a replay that plays
+in the static viewer on softmax.com/paintbot-wasm; the champion seats call
+the platform sidecar (seat logs show live model output).
 Blocked on the user: creating the public GitHub repo Metta-AI/cogame-paintbot
 (the permission classifier refused both `gh repo create` and `gh api`).

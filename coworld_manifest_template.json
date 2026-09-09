@@ -17,7 +17,7 @@
       "bundle": "static-replay-viewer",
       "replay_compression": "gzip"
     },
-    "description": "Paintbot Season 2 as a single-pod Coworld: every policy is ONE wasm file the game runs for you (no policy pods). Upload a wasm32-wasi module with `coworld upload-policy --file my_policy.wasm`; the game loads it per seat, and it plays the unchanged Season 2 play-seat wire - uploading plays, chatting in the lobby, calling ladders - with a host-provided model call through the platform sidecar. Format and SDK: docs/POLICY_WASM.md. Bundled baselines are the three Season 2 starter personas ported to wasm. The game itself is Paintbot: Paintbot: paintball-flavored team tag. The players are submitted AI policies - and there's a human seat if you want in. Season 2 plays battle royale: sixteen duos on a giant generated map, a closing zone, no respawns, last team standing. Policies talk before the round, shout during it, and alliances hold only as long as both sides keep them. Every act mints Glory as it happens - the league standing is a ledger of deeds, not a placement average. Full rules live in the wiki.",
+    "description": "Paintbot Season 2 as a single-pod Coworld: every policy is ONE wasm file the game runs for you (no policy pods). Upload a wasm32-wasi module with `coworld upload-policy --file my_policy.wasm`; the game loads it per seat, and it plays the unchanged Season 2 play-seat wire - uploading plays, chatting in the lobby, calling ladders - with a host-provided model call through the platform sidecar. Format and SDK: docs/POLICY_WASM.md. Bundled baselines are the classic Paintbot bot ported to wasm (campaign cells are 1v1/2v2/4ffa Sprite-mask matches); the three Season 2 starter personas are available as uploaded policies. The game itself is Paintbot: Paintbot: paintball-flavored team tag. The players are submitted AI policies - and there's a human seat if you want in. Season 2 plays battle royale: sixteen duos on a giant generated map, a closing zone, no respawns, last team standing. Policies talk before the round, shout during it, and alliances hold only as long as both sides keep them. Every act mints Glory as it happens - the league standing is a ledger of deeds, not a placement average. Full rules live in the wiki.",
     "owner": "daveey@softmax.com",
     "runnable": {
       "type": "game",
@@ -1213,34 +1213,433 @@
   "player": [
     {
       "type": "player",
-      "id": "starter-cautious",
-      "name": "Starter (cautious)",
-      "description": "The Season 2 'cautious' starter persona as a paintbot-wasm policy: uploads the reference playbook, chats in the lobby, calls and re-calls ladders from a live model when the platform sidecar is reachable and from its scripted persona turns otherwise.",
-      "file": "policies/wasm/dist/starter-cautious.wasm",
-      "source_url": "https://github.com/Metta-AI/cogame-paintbot/tree/main/policies/wasm/starter"
+      "id": "baseline",
+      "name": "Baseline",
+      "description": "The classic Paintbot baseline bot (players/baseline) as a wasm policy: cover-aware pathfinding, a six-strong attack wave, overwatch and a home defender, driving Sprite v1 input masks for the campaign's 1v1/2v2/4ffa cells.",
+      "file": "policies/wasm/dist/baseline.wasm",
+      "source_url": "https://github.com/Metta-AI/cogame-paintbot/tree/main/policies/wasm/baseline"
     },
     {
       "type": "player",
-      "id": "starter-aggressive",
-      "name": "Starter (aggressive)",
-      "description": "The Season 2 'aggressive' starter persona as a paintbot-wasm policy: uploads the reference playbook, chats in the lobby, calls and re-calls ladders from a live model when the platform sidecar is reachable and from its scripted persona turns otherwise.",
-      "file": "policies/wasm/dist/starter-aggressive.wasm",
-      "source_url": "https://github.com/Metta-AI/cogame-paintbot/tree/main/policies/wasm/starter"
+      "id": "baseline-rusher",
+      "name": "Baseline Rusher",
+      "description": "The classic baseline tuned to rush: wider engagement ranges and an earlier late-game push.",
+      "file": "policies/wasm/dist/baseline-rusher.wasm",
+      "source_url": "https://github.com/Metta-AI/cogame-paintbot/tree/main/policies/wasm/baseline"
     },
     {
       "type": "player",
-      "id": "starter-collaborative",
-      "name": "Starter (collaborative)",
-      "description": "The Season 2 'collaborative' starter persona as a paintbot-wasm policy: uploads the reference playbook, chats in the lobby, calls and re-calls ladders from a live model when the platform sidecar is reachable and from its scripted persona turns otherwise.",
-      "file": "policies/wasm/dist/starter-collaborative.wasm",
-      "source_url": "https://github.com/Metta-AI/cogame-paintbot/tree/main/policies/wasm/starter"
+      "id": "baseline-guard",
+      "name": "Baseline Guard",
+      "description": "The classic baseline tuned to defend: a longer thief hunt, shallower flanks and a steadier back line.",
+      "file": "policies/wasm/dist/baseline-guard.wasm",
+      "source_url": "https://github.com/Metta-AI/cogame-paintbot/tree/main/policies/wasm/baseline"
     }
   ],
   "variants": [
     {
+      "id": "1v1",
+      "name": "1v1 (8 per team)",
+      "description": "Played by wasm policy files the game hosts (docs/POLICY_WASM.md): Two-policy Paintbot team battle for custom lobbies and league board cells: one policy fields the full Red team of 8 versus the other fielding the full Blue team of 8 on random generated terrain with Paintbot's standard pot scoring and tuning.",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player1"
+          },
+          {
+            "name": "Player2"
+          },
+          {
+            "name": "Player3"
+          },
+          {
+            "name": "Player4"
+          },
+          {
+            "name": "Player5"
+          },
+          {
+            "name": "Player6"
+          },
+          {
+            "name": "Player7"
+          },
+          {
+            "name": "Player8"
+          },
+          {
+            "name": "Player9"
+          },
+          {
+            "name": "Player10"
+          },
+          {
+            "name": "Player11"
+          },
+          {
+            "name": "Player12"
+          },
+          {
+            "name": "Player13"
+          },
+          {
+            "name": "Player14"
+          },
+          {
+            "name": "Player15"
+          },
+          {
+            "name": "Player16"
+          }
+        ],
+        "slots": [
+          {
+            "team": "red"
+          },
+          {
+            "team": "blue"
+          },
+          {
+            "team": "red"
+          },
+          {
+            "team": "blue"
+          },
+          {
+            "team": "red"
+          },
+          {
+            "team": "blue"
+          },
+          {
+            "team": "red"
+          },
+          {
+            "team": "blue"
+          },
+          {
+            "team": "red"
+          },
+          {
+            "team": "blue"
+          },
+          {
+            "team": "red"
+          },
+          {
+            "team": "blue"
+          },
+          {
+            "team": "red"
+          },
+          {
+            "team": "blue"
+          },
+          {
+            "team": "red"
+          },
+          {
+            "team": "blue"
+          }
+        ],
+        "seed": 679961,
+        "num_agents": 16,
+        "minPlayers": 16,
+        "lives": 3,
+        "hitPoints": 3,
+        "respawnTicks": 72,
+        "gunRange": 1300,
+        "fireCooldownTicks": 12,
+        "carrierSpeedPct": 70,
+        "aimTurnRate": 5,
+        "visionConeDeg": 60,
+        "visionBubble": 90,
+        "startWaitTicks": 120,
+        "gameOverTicks": 360,
+        "maxTicks": 7200,
+        "maxGames": 1,
+        "mapPath": "gen",
+        "showPlayerLabels": true,
+        "teams": 2,
+        "scoring": "pot",
+        "lobbyJoinTimeoutTicks": 7200,
+        "barrageMaxPerSec": 15,
+        "barrageStartPerSec": 4,
+        "barrageStartSec": 30,
+        "barrageSaturateSec": 30,
+        "allowDeprecatedModes": true
+      }
+    },
+    {
+      "id": "2v2",
+      "name": "2v2",
+      "description": "Played by wasm policy files the game hosts (docs/POLICY_WASM.md): Classic two-sided play on RANDOM GENERATED terrain: 16 seats, each parity team split between two entrant policies (4 policies per episode, 4 agents each). The map seed derives from the per-episode game seed; replays pin the exact geometry. Every team antes a point and the winning side takes the pot: +2 to each winning policy, -2 to each loser.",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player1"
+          },
+          {
+            "name": "Player2"
+          },
+          {
+            "name": "Player3"
+          },
+          {
+            "name": "Player4"
+          },
+          {
+            "name": "Player5"
+          },
+          {
+            "name": "Player6"
+          },
+          {
+            "name": "Player7"
+          },
+          {
+            "name": "Player8"
+          },
+          {
+            "name": "Player9"
+          },
+          {
+            "name": "Player10"
+          },
+          {
+            "name": "Player11"
+          },
+          {
+            "name": "Player12"
+          },
+          {
+            "name": "Player13"
+          },
+          {
+            "name": "Player14"
+          },
+          {
+            "name": "Player15"
+          },
+          {
+            "name": "Player16"
+          }
+        ],
+        "slots": [
+          {
+            "team": "red"
+          },
+          {
+            "team": "blue"
+          },
+          {
+            "team": "red"
+          },
+          {
+            "team": "blue"
+          },
+          {
+            "team": "red"
+          },
+          {
+            "team": "blue"
+          },
+          {
+            "team": "red"
+          },
+          {
+            "team": "blue"
+          },
+          {
+            "team": "red"
+          },
+          {
+            "team": "blue"
+          },
+          {
+            "team": "red"
+          },
+          {
+            "team": "blue"
+          },
+          {
+            "team": "red"
+          },
+          {
+            "team": "blue"
+          },
+          {
+            "team": "red"
+          },
+          {
+            "team": "blue"
+          }
+        ],
+        "seed": 679961,
+        "num_agents": 16,
+        "minPlayers": 16,
+        "lives": 3,
+        "hitPoints": 3,
+        "respawnTicks": 72,
+        "gunRange": 1300,
+        "fireCooldownTicks": 12,
+        "carrierSpeedPct": 70,
+        "aimTurnRate": 5,
+        "visionConeDeg": 60,
+        "visionBubble": 90,
+        "startWaitTicks": 120,
+        "gameOverTicks": 360,
+        "maxTicks": 7200,
+        "maxGames": 1,
+        "mapPath": "gen",
+        "showPlayerLabels": true,
+        "teams": 2,
+        "scoring": "pot",
+        "lobbyJoinTimeoutTicks": 7200,
+        "barrageMaxPerSec": 15,
+        "barrageStartPerSec": 4,
+        "barrageStartSec": 30,
+        "barrageSaturateSec": 30,
+        "allowDeprecatedModes": true
+      }
+    },
+    {
+      "id": "4ffa",
+      "name": "4-team free-for-all",
+      "description": "Played by wasm policy files the game hosts (docs/POLICY_WASM.md): Four teams \u2014 red, blue, green, yellow \u2014 one entrant policy per team (slot mod 4), each defending its own heart on a generated square corner or plus map. Steal any enemy heart and carry it home; last team standing wins a wipe; every team antes a point and the winner takes the pot: +4 to the winning policy, -1 to each of the three losers.",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player1"
+          },
+          {
+            "name": "Player2"
+          },
+          {
+            "name": "Player3"
+          },
+          {
+            "name": "Player4"
+          },
+          {
+            "name": "Player5"
+          },
+          {
+            "name": "Player6"
+          },
+          {
+            "name": "Player7"
+          },
+          {
+            "name": "Player8"
+          },
+          {
+            "name": "Player9"
+          },
+          {
+            "name": "Player10"
+          },
+          {
+            "name": "Player11"
+          },
+          {
+            "name": "Player12"
+          },
+          {
+            "name": "Player13"
+          },
+          {
+            "name": "Player14"
+          },
+          {
+            "name": "Player15"
+          },
+          {
+            "name": "Player16"
+          }
+        ],
+        "slots": [
+          {
+            "team": "red"
+          },
+          {
+            "team": "blue"
+          },
+          {
+            "team": "green"
+          },
+          {
+            "team": "yellow"
+          },
+          {
+            "team": "red"
+          },
+          {
+            "team": "blue"
+          },
+          {
+            "team": "green"
+          },
+          {
+            "team": "yellow"
+          },
+          {
+            "team": "red"
+          },
+          {
+            "team": "blue"
+          },
+          {
+            "team": "green"
+          },
+          {
+            "team": "yellow"
+          },
+          {
+            "team": "red"
+          },
+          {
+            "team": "blue"
+          },
+          {
+            "team": "green"
+          },
+          {
+            "team": "yellow"
+          }
+        ],
+        "seed": 679961,
+        "num_agents": 16,
+        "minPlayers": 16,
+        "lives": 3,
+        "hitPoints": 3,
+        "respawnTicks": 72,
+        "gunRange": 1300,
+        "fireCooldownTicks": 12,
+        "carrierSpeedPct": 70,
+        "aimTurnRate": 5,
+        "visionConeDeg": 60,
+        "visionBubble": 90,
+        "startWaitTicks": 120,
+        "gameOverTicks": 360,
+        "maxTicks": 7200,
+        "maxGames": 1,
+        "mapPath": "gen",
+        "showPlayerLabels": true,
+        "teams": 4,
+        "scoring": "pot",
+        "lobbyJoinTimeoutTicks": 7200,
+        "barrageMaxPerSec": 15,
+        "barrageStartPerSec": 4,
+        "barrageStartSec": 30,
+        "barrageSaturateSec": 30,
+        "allowDeprecatedModes": true
+      }
+    },
+    {
       "id": "battle-royale-s2",
       "name": "Battle Royale \u2014 Season 2",
-      "description": "Season 2 battle royale, played by wasm policy files the game hosts: The 16-seat battle royale with the Season 2 play-calling shell armed: every seat is a play seat. Policies upload WebAssembly playbooks over the wire, talk in an open 600-tick (~25 s) lobby-chat window before the round, then drive their cogs by calling plays \u2014 an ordered ladder of named plays with typed parameters, replaced or retuned mid-match as the zone closes. The engine ships a public seven-play reference menu (docs/designs/BR_PLAYS.md): pact, edge_ride, bodyguard, jackal, target_law, supply_run, crossfire \u2014 the competitive floor every private playbook must beat. Same rules as classic Battle Royale at half the field: sixteen solo entrants, one policy per team, on a generated flagless map scaled to keep every entrant's share of territory (and the derived gun range) identical to the 32-seat giant, no respawns, six zone phases that close the field completely, last cog standing, classic scoring with placement bonuses.",
+      "description": "Played by wasm policy files the game hosts (docs/POLICY_WASM.md): The 16-seat battle royale with the Season 2 play-calling shell armed: every seat is a play seat. Policies upload WebAssembly playbooks over the wire, talk in an open 600-tick (~25 s) lobby-chat window before the round, then drive their cogs by calling plays \u2014 an ordered ladder of named plays with typed parameters, replaced or retuned mid-match as the zone closes. The engine ships a public seven-play reference menu (docs/designs/BR_PLAYS.md): pact, edge_ride, bodyguard, jackal, target_law, supply_run, crossfire \u2014 the competitive floor every private playbook must beat. Same rules as classic Battle Royale at half the field: sixteen solo entrants, one policy per team, on a generated flagless map scaled to keep every entrant's share of territory (and the derived gun range) identical to the 32-seat giant, no respawns, six zone phases that close the field completely, last cog standing, classic scoring with placement bonuses.",
       "game_config": {
         "players": [
           {
@@ -1454,52 +1853,52 @@
   "certification": {
     "players": [
       {
-        "player_id": "starter-cautious"
+        "player_id": "baseline"
       },
       {
-        "player_id": "starter-aggressive"
+        "player_id": "baseline-rusher"
       },
       {
-        "player_id": "starter-collaborative"
+        "player_id": "baseline-guard"
       },
       {
-        "player_id": "starter-cautious"
+        "player_id": "baseline"
       },
       {
-        "player_id": "starter-aggressive"
+        "player_id": "baseline-rusher"
       },
       {
-        "player_id": "starter-collaborative"
+        "player_id": "baseline-guard"
       },
       {
-        "player_id": "starter-cautious"
+        "player_id": "baseline"
       },
       {
-        "player_id": "starter-aggressive"
+        "player_id": "baseline-rusher"
       },
       {
-        "player_id": "starter-collaborative"
+        "player_id": "baseline-guard"
       },
       {
-        "player_id": "starter-cautious"
+        "player_id": "baseline"
       },
       {
-        "player_id": "starter-aggressive"
+        "player_id": "baseline-rusher"
       },
       {
-        "player_id": "starter-collaborative"
+        "player_id": "baseline-guard"
       },
       {
-        "player_id": "starter-cautious"
+        "player_id": "baseline"
       },
       {
-        "player_id": "starter-aggressive"
+        "player_id": "baseline-rusher"
       },
       {
-        "player_id": "starter-collaborative"
+        "player_id": "baseline-guard"
       },
       {
-        "player_id": "starter-cautious"
+        "player_id": "baseline"
       }
     ],
     "game_config": {
@@ -1555,160 +1954,80 @@
       ],
       "slots": [
         {
-          "team": "red",
-          "control": "play"
+          "team": "red"
         },
         {
-          "team": "blue",
-          "control": "play"
+          "team": "blue"
         },
         {
-          "team": "green",
-          "control": "play"
+          "team": "red"
         },
         {
-          "team": "yellow",
-          "control": "play"
+          "team": "blue"
         },
         {
-          "team": "black",
-          "control": "play"
+          "team": "red"
         },
         {
-          "team": "silver",
-          "control": "play"
+          "team": "blue"
         },
         {
-          "team": "ivory",
-          "control": "play"
+          "team": "red"
         },
         {
-          "team": "pink",
-          "control": "play"
+          "team": "blue"
         },
         {
-          "team": "umber",
-          "control": "play"
+          "team": "red"
         },
         {
-          "team": "rust",
-          "control": "play"
+          "team": "blue"
         },
         {
-          "team": "orange",
-          "control": "play"
+          "team": "red"
         },
         {
-          "team": "plum",
-          "control": "play"
+          "team": "blue"
         },
         {
-          "team": "lime",
-          "control": "play"
+          "team": "red"
         },
         {
-          "team": "navy",
-          "control": "play"
+          "team": "blue"
         },
         {
-          "team": "azure",
-          "control": "play"
+          "team": "red"
         },
         {
-          "team": "peach",
-          "control": "play"
+          "team": "blue"
         }
       ],
       "seed": 679961,
       "num_agents": 16,
       "minPlayers": 16,
-      "lives": 1,
-      "hitPoints": 4,
+      "lives": 3,
+      "hitPoints": 3,
       "respawnTicks": 72,
       "gunRange": 1300,
       "fireCooldownTicks": 12,
       "carrierSpeedPct": 70,
-      "playerBouncePct": 40,
       "aimTurnRate": 5,
       "visionConeDeg": 60,
       "visionBubble": 90,
       "startWaitTicks": 48,
-      "lobbyJoinTimeoutTicks": 7200,
       "gameOverTicks": 24,
-      "maxTicks": 720,
+      "maxTicks": 600,
       "maxGames": 1,
+      "mapPath": "gen",
       "showPlayerLabels": true,
-      "teams": 16,
-      "fireWindupTicks": 5,
-      "barrageMaxPerSec": 0,
-      "mapPath": "brpool16",
-      "brMode": true,
-      "lootStart": false,
-      "downedMode": true,
-      "zoneDamageByPaint": true,
-      "zoneBlocksRevive": true,
-      "zonePhases": [
-        {
-          "z": 0.75,
-          "waitTicks": 259,
-          "shrinkTicks": 160,
-          "dps": 0
-        },
-        {
-          "z": 0.55,
-          "waitTicks": 0,
-          "shrinkTicks": 183,
-          "dps": 3
-        },
-        {
-          "z": 0.35,
-          "waitTicks": 0,
-          "shrinkTicks": 261,
-          "dps": 6
-        },
-        {
-          "z": 0.2,
-          "waitTicks": 0,
-          "shrinkTicks": 450,
-          "dps": 10
-        },
-        {
-          "z": 0.08,
-          "waitTicks": 0,
-          "shrinkTicks": 1163,
-          "dps": 15
-        },
-        {
-          "z": 0.001,
-          "waitTicks": 0,
-          "shrinkTicks": 1275,
-          "dps": 20
-        }
-      ],
-      "season2Shell": true,
-      "viewIntervalTicks": 6,
-      "lobbyChatTicks": 240,
-      "playSeatBindTicks": 7200,
-      "variantId": "battle-royale-s2",
-      "gloryMultiplierRecut": true,
-      "stampRealizedConfig": true,
-      "giveItem": false,
-      "dropItem": false,
-      "lootSpawnSeedGuns": 0,
-      "lootSpawnSeedHoppers": 0,
-      "lootSpawnSeedRadius": 0,
-      "hopperSiteTrafficPermille": 0,
-      "bandagePickups": 0,
-      "frameLoadoutFlags": true,
-      "winAsMultiplier": true,
-      "deedMintCaps": true,
-      "sprayCount": 6,
-      "grenadeCount": 22,
-      "brAssistRescueUngated": true,
-      "pactScopedWipeDown": true,
-      "placementRampV3": true,
-      "gloryFixedPointScale": true,
-      "catalogV3Reprice": true
+      "teams": 2,
+      "scoring": "pot",
+      "lobbyJoinTimeoutTicks": 7200,
+      "barrageMaxPerSec": 15,
+      "barrageStartPerSec": 4,
+      "barrageStartSec": 30,
+      "barrageSaturateSec": 30,
+      "allowDeprecatedModes": true
     }
   }
 }

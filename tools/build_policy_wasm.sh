@@ -41,6 +41,18 @@ for persona in cautious aggressive collaborative; do
   test -s "$out_dir/starter-$persona.wasm"
 done
 
+# The classic baseline as a wasm policy, in three tunings so a champion, a
+# second champion, and a filler are distinct bytes and distinct play.
+build_baseline() {
+  local name="$1"; shift
+  echo "building $name"
+  nim c -f --hints:off "$@" --out:"$out_dir/$name.wasm" policies/wasm/baseline/baseline_policy.nim
+  test -s "$out_dir/$name.wasm"
+}
+build_baseline baseline
+build_baseline baseline-rusher -d:tuneRushEngageRange=300 -d:tuneEscortEngageRange=400 -d:tuneLatePushTick=2800
+build_baseline baseline-guard -d:tuneThiefFixTtl=60 -d:tuneThiefLeadTicks=24 -d:tuneFlankDepth=200
+
 echo "building echo"
 nim c -f --hints:off policies/wasm/echo/echo.nim
 cp policies/wasm/.build/echo.wasm "$out_dir/echo.wasm"

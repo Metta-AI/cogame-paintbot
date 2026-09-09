@@ -55,3 +55,14 @@ replay, 16 seat logs; replay renders in the static viewer; a run with an
 LLM key shows model calls in seat logs; `coworld certify` passes.
 Hosted: canonical upload; league rounds complete; two ranked players;
 featured replay on softmax.com/paintbot-wasm; seat logs show sidecar calls.
+
+## Status (2026-09-09)
+
+Done locally: policy-host + hosted seats (16-seat episodes, invalid-file
+failure path, player_status.json), the SDK, the echo policy, the three starter
+personas as wasm (canned and live-model runs verified through the Anthropic
+route), manifest/compose/Dockerfile, unit tests, README, CI job.
+Next: `coworld build` (Docker), `coworld run-episode`, `coworld certify`,
+upload, secret, league, champions, verification on softmax.com.
+Blocked on the user: creating the public GitHub repo Metta-AI/cogame-paintbot
+(the permission classifier refused both `gh repo create` and `gh api`).

@@ -279,6 +279,9 @@ jobs:
         run: |
           nim c -r --hints:off -d:PersonaName=aggressive --path:src/shell --path:policy_sdk \
             --out:/tmp/test_starter_policy tests/test_starter_policy.nim
+      - name: Hosted seats unit test
+        run: |
+          cd tests && nim c -r --hints:off --out:/tmp/test_hosted_seats test_hosted_seats.nim
       - name: Build policy-host
         run: |
           export WASMTIME_C_API="$(sed -n 's/^WASMTIME_C_API=//p' /tmp/deps.env)"

@@ -59,7 +59,9 @@ def main() -> int:
 
     config = variant_config(pathlib.Path(args.manifest), args.variant)
     seats = args.seats
-    config["players"] = [{"name": f"wasm-{slot}"} for slot in range(seats)]
+    # Names with spaces, slashes, and colons, like the platform's de-duplicated
+    # "entrant (2)" and "coworld-smoke/cow_...:v1" roster names.
+    config["players"] = [{"name": f"wasm/starter:{slot} ({slot // 2})"} for slot in range(seats)]
     config["slots"] = (config.get("slots") or [{}] * seats)[:seats]
     while len(config["slots"]) < seats:
         config["slots"].append({"control": "play"})

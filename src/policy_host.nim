@@ -20,7 +20,7 @@
 ## set, which is how a policy author tests a module against a plain game
 ## container without the game-hosted runner.
 
-import std/[locks, monotimes, os, parseopt, strutils, times]
+import std/[locks, monotimes, os, parseopt, strutils, times, uri]
 import whisky
 import policy/[llm_proxy, wasi_host]
 
@@ -101,9 +101,12 @@ proc queryValue(url, key: string): string =
       return pair[eq + 1 .. ^1]
 
 proc addQuery(url, key, value: string): string =
+  ## Values are percent-encoded: a roster name such as "Starter (2)" or
+  ## "coworld-smoke/cow_...:v1" would otherwise break the request line and
+  ## the server drops the handshake without a response.
   if value.len == 0 or queryValue(url, key).len > 0:
     return url
-  url & (if '?' in url: "&" else: "?") & key & "=" & value
+  url & (if '?' in url: "&" else: "?") & key & "=" & encodeUrl(value, usePlus = false)
 
 proc playerUrl(options: Options): string =
   ## Completes the player URL: a bare host:port/player gets slot, token, and

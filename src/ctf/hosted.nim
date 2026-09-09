@@ -100,14 +100,11 @@ proc timestamp(): string =
 proc seatToken(config: GameConfig, slot: int): string =
   if slot < config.slots.len: config.slots[slot].token else: ""
 
-proc seatName(config: GameConfig, slot: int): string =
-  if slot < config.slots.len and config.slots[slot].name.len > 0:
-    config.slots[slot].name
-  else:
-    "player-" & $slot
-
 proc startHostedSeats*(port: int, config: GameConfig) =
-  ## Spawns every seat's policy-host against the now-listening server.
+  ## Spawns every seat's policy-host against the now-listening server. The
+  ## join carries only slot and token: the server assigns the configured
+  ## roster name from the token (configuredPlayerName), exactly as it does
+  ## for a platform-hosted pod.
   for seat in hostedRuntime.seats.mitems:
     # The log must exist even if the child never starts (roles/GAME.md).
     createDir(seat.logPath.parentDir)
@@ -119,7 +116,6 @@ proc startHostedSeats*(port: int, config: GameConfig) =
       " --slot=" & $seat.slot &
       " --url=" & quoteShell("ws://127.0.0.1:" & $port & "/player") &
       " --token=" & quoteShell(config.seatToken(seat.slot)) &
-      " --name=" & quoteShell(config.seatName(seat.slot)) &
       " >> " & quoteShell(seat.logPath) & " 2>&1"
     try:
       seat.process = startProcess("/bin/sh", args = ["-c", command],

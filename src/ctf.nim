@@ -3,6 +3,7 @@ import
   bitworld/runtime,
   ctf/sim,
   ctf/server,
+  ctf/hosted,
   shell/runtime_boot
 
 const LegacyFixedSeed = 0xA6019
@@ -119,13 +120,21 @@ when isMainModule:
     config.checkDeprecatedMode()
     config.checkPlayRuntimeAvailable()
 
+  if hostedSeatsEnabled():
+    loadHostedSeats()
+
   echo "starting ctf on ", runtimeConfig.host, ":", runtimeConfig.port
-  runServerLoop(
-    runtimeConfig.host,
-    runtimeConfig.port,
-    config,
-    localReplayPath,
-    loadReplayPath,
-    "",
-    runtimeConfig
-  )
+  try:
+    runServerLoop(
+      runtimeConfig.host,
+      runtimeConfig.port,
+      config,
+      localReplayPath,
+      loadReplayPath,
+      "",
+      runtimeConfig
+    )
+  finally:
+    # An aborted episode (lobby timeout, a declared player failure) must not
+    # leave policy-host children behind or an unwritten player_status.json.
+    finishHostedSeats()

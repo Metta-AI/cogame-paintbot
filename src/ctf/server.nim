@@ -11,6 +11,7 @@ import
   ../shell/[body, body_map, episode, ingress, outbound,
     standing_order, transport, view],
   ../shell/dispatch, ../shell/packets, ../shell/replay_records, ../shell/seats,
+  hosted,
   ../shell/types,
   ../shell/vote_packets as votePackets
 
@@ -4227,6 +4228,8 @@ proc runServerLoop*(
     ServerThreadArgs(server: serverPtr, address: host, port: port)
   )
   httpServer.waitUntilReady()
+  if hostedRuntime.enabled:
+    startHostedSeats(port, config)
 
   # --- mux transport (RL training) -----------------------------------------
   # COGAME_MUX_SOCKET multiplexes every policy seat of this env over ONE Unix
@@ -4277,6 +4280,19 @@ proc runServerLoop*(
     shellEpisode.closeShellEpisode()
 
   while true:
+    if hostedRuntime.enabled and not replayLoaded:
+      # A policy-host that dies before its seat joins is that seat's fault:
+      # declare it now rather than burning the lobby timeout unattributed.
+      for exit in pollHostedSeats():
+        if sim.phase != Lobby:
+          continue
+        # An invalid module is the policy's fault; any other pre-join exit
+        # is the host's, and either way the lobby can never fill.
+        if exit.code == HostedExitInvalidPolicy:
+          declarePlayerFailure(exit.slot,
+            hostedFailureMessage(exit.slot, exit.code))
+        raise newException(CtfError,
+          hostedFailureMessage(exit.slot, exit.code))
     var
       pendingReplayUri = ""
       sockets: seq[WebSocket] = @[]
@@ -5795,6 +5811,9 @@ proc runServerLoop*(
           collectedEvents.eventsJsonl(sim.tickCount, summaryExtra))
         echo "Events written: ", eventsPath,
           " (", collectedEvents.len, " events, ", getFileSize(eventsPath), " bytes)"
+      # Game-hosted seats: every seat log must be complete before the
+      # results marker lands (roles/GAME.md), so stop the children first.
+      finishHostedSeats()
       if runtimeConfig.resultsUri.len > 0:
         let scoresJson = sim.playerResultsJson() & "\n"
         runtimeConfig.writeResults(scoresJson)

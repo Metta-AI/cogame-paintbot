@@ -96,3 +96,6 @@ br-paint4-match.bitreplay
 
 # Private champion source, copied in by exp/build_champion.sh. Never commit.
 exp/champion/
+
+# paintbot-wasm build products
+policies/wasm/.build/

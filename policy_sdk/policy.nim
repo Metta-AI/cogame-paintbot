@@ -10,6 +10,9 @@
 
 import std/strutils
 
+type GuestPtr* = (when defined(paintbotPolicyWasm): int32 else: int)
+  ## A guest address: i32 in wasm32, pointer-sized in native test builds.
+
 when defined(paintbotPolicyWasm):
   {.emit: """
 void NimMain(void);
@@ -89,13 +92,13 @@ else:
 
 var arenaBuffers: seq[string]
 
-proc policy_alloc*(length: int32): int32 {.exportc, cdecl.} =
+proc policy_alloc*(length: int32): GuestPtr {.exportc, cdecl.} =
   ## Host->guest buffer for one message. Buffers live until the next
   ## message, which is all the host needs.
   if arenaBuffers.len > 8:
     arenaBuffers.setLen(0)
   var buffer = newString(max(1, int(length)))
-  let address = cast[int32](cast[uint](addr buffer[0]))
+  let address = cast[GuestPtr](cast[uint](addr buffer[0]))
   arenaBuffers.add(move(buffer))
   address
 
@@ -111,7 +114,7 @@ template definePolicy*(initBody, messageBody: untyped) =
       log("policy_init failed: " & error.msg, 3)
       1'i32
 
-  proc policy_on_message*(data: int32, length: int32): int32 {.
+  proc policy_on_message*(data: GuestPtr, length: int32): int32 {.
       exportc, cdecl.} =
     var message {.inject.} = newString(int(length))
     if length > 0:

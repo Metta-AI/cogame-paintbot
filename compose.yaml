@@ -1,9 +1,13 @@
+# paintbot-wasm is a game-hosted Coworld: the game image is the only
+# runnable. Policies are wasm files bundled through the manifest
+# (player[].file) and loaded by /bin/policy-host inside this image; there is
+# no player service to build.
 x-coworld-role-contexts:
   game: &game_context ${GAME_CONTEXT:-.}
 
 services:
   game:
-    image: coworld-ctf-game:latest
+    image: cogame-paintbot-game:latest
     platform: linux/amd64
     build:
       context: *game_context
@@ -11,13 +15,4 @@ services:
       network: host
       args:
         NimFlags: ${GAME_NIM_FLAGS:--d:release -d:useMalloc --threads:on --opt:speed --stackTrace:on}
-        # Engine build stamp for replay headers (see Dockerfile); empty when
-        # the caller does not export it, which leaves recordings unstamped.
         SIM_SOURCES_STAMP: ${SIM_SOURCES_STAMP:-}
-  player:
-    image: coworld-ctf-baseline:latest
-    platform: linux/amd64
-    build:
-      context: *game_context
-      dockerfile: players/baseline/Dockerfile
-      network: host

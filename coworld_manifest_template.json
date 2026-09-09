@@ -1,0 +1,1708 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Metta-AI/metta/main/packages/coworld/src/coworld/coworld_manifest_schema.json",
+  "tags": [
+    "battle-royale",
+    "elimination",
+    "game-hosted",
+    "play-calling",
+    "single-pod",
+    "tag",
+    "team",
+    "wasm",
+    "wasm-policies"
+  ],
+  "game": {
+    "name": "paintbot-wasm",
+    "replay_viewer": {
+      "bundle": "static-replay-viewer",
+      "replay_compression": "gzip"
+    },
+    "description": "Paintbot Season 2 as a single-pod Coworld: every policy is ONE wasm file the game runs for you (no policy pods). Upload a wasm32-wasi module with `coworld upload-policy --file my_policy.wasm`; the game loads it per seat, and it plays the unchanged Season 2 play-seat wire - uploading plays, chatting in the lobby, calling ladders - with a host-provided model call through the platform sidecar. Format and SDK: docs/POLICY_WASM.md. Bundled baselines are the three Season 2 starter personas ported to wasm. The game itself is Paintbot: Paintbot: paintball-flavored team tag. The players are submitted AI policies - and there's a human seat if you want in. Season 2 plays battle royale: sixteen duos on a giant generated map, a closing zone, no respawns, last team standing. Policies talk before the round, shout during it, and alliances hold only as long as both sides keep them. Every act mints Glory as it happens - the league standing is a ledger of deeds, not a placement average. Full rules live in the wiki.",
+    "owner": "daveey@softmax.com",
+    "runnable": {
+      "type": "game",
+      "image": "{{GAME_IMAGE}}",
+      "run": [
+        "/bin/ctf"
+      ],
+      "source_url": "https://github.com/Metta-AI/cogame-paintbot/tree/main",
+      "env": {
+        "ANTHROPIC_API_KEY_URI": "secret://coworld/paintbot-wasm/anthropic_api_key"
+      }
+    },
+    "config_schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tokens",
+        "players"
+      ],
+      "properties": {
+        "tokens": {
+          "description": "One connection token per player slot, indexed by slot.",
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 32,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "players": {
+          "description": "One player display-name object per player slot, indexed by slot.",
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "slots": {
+          "description": "Optional fixed player slot team, color, skin, and token settings.",
+          "type": "array",
+          "maxItems": 32,
+          "default": [],
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "token": {
+                "type": "string"
+              },
+              "team": {
+                "type": "string",
+                "enum": [
+                  "red",
+                  "blue",
+                  "green",
+                  "yellow",
+                  "black",
+                  "silver",
+                  "ivory",
+                  "pink",
+                  "umber",
+                  "rust",
+                  "orange",
+                  "plum",
+                  "lime",
+                  "navy",
+                  "azure",
+                  "peach"
+                ],
+                "description": "Fixed team for this seat. Green and yellow are only valid when teams is 4 or more; black through pink additionally need teams 8 (8-duo battle-royale) or 16; the last 8 colors (umber through peach) are only valid when teams is 16 (full battle-royale); with no team the seat is dealt slot mod teams."
+              },
+              "skin": {
+                "description": "Cosmetic body-art skin for this slot's player. Rendering only: no gameplay effect and no observation-label change.",
+                "type": "string",
+                "enum": [
+                  "default",
+                  "crown"
+                ]
+              },
+              "color": {
+                "type": "string",
+                "enum": [
+                  "red",
+                  "orange",
+                  "yellow",
+                  "light blue",
+                  "pink",
+                  "lime",
+                  "blue",
+                  "pale blue",
+                  "gray",
+                  "white",
+                  "dark brown",
+                  "brown",
+                  "dark teal",
+                  "green",
+                  "dark navy",
+                  "black"
+                ]
+              },
+              "control": {
+                "description": "Input source for this seat. \"input\" is the direct socket/input path; \"play\" arms the Season 2 play-seat protocol and requires season2Shell.",
+                "type": "string",
+                "enum": [
+                  "input",
+                  "play"
+                ]
+              }
+            }
+          },
+          "minItems": 0
+        },
+        "closedRoster": {
+          "description": "Reject players outside the configured token/slot roster.",
+          "type": "boolean",
+          "default": false
+        },
+        "seed": {
+          "description": "Random seed.",
+          "type": "integer",
+          "default": 679961
+        },
+        "minPlayers": {
+          "description": "Players needed before the game countdown starts.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32,
+          "default": 16
+        },
+        "lives": {
+          "description": "Lives per player. Out of lives = out for the round.",
+          "type": "integer",
+          "minimum": 1,
+          "default": 3
+        },
+        "hitPoints": {
+          "description": "Hit points per life. Each shot removes one; at zero you die.",
+          "type": "integer",
+          "minimum": 1,
+          "default": 3
+        },
+        "respawnTicks": {
+          "description": "Ticks dead before respawning at home (~3s at 24 ticks/s).",
+          "type": "integer",
+          "minimum": 0,
+          "default": 72
+        },
+        "gunRange": {
+          "description": "Maximum hitscan gun range in pixels.",
+          "type": "integer",
+          "minimum": 1,
+          "default": 1300
+        },
+        "fireCooldownTicks": {
+          "description": "Minimum ticks between shots (~0.5s at 24 ticks/s).",
+          "type": "integer",
+          "minimum": 0,
+          "default": 12
+        },
+        "carrierSpeedPct": {
+          "description": "Movement speed percentage while carrying the heart.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 70
+        },
+        "playerBouncePct": {
+          "description": "Restitution percentage of player-player collisions; bodies are always solid.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 40
+        },
+        "aimTurnRate": {
+          "description": "Aim rotation speed in brads (256ths of a turn) per tick while a rotate button is held. B rotates counter-clockwise, Select clockwise; movement never changes the aim.",
+          "type": "integer",
+          "minimum": 1,
+          "default": 5
+        },
+        "visionConeDeg": {
+          "description": "Vision cone half-angle in degrees around the aim angle. Fog of war hides everything outside the cone, the vision bubble, and line of sight.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 180,
+          "default": 45
+        },
+        "visionBubble": {
+          "description": "Omnidirectional vision radius in pixels around each player, seen regardless of aim.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 90
+        },
+        "startWaitTicks": {
+          "description": "Lobby countdown ticks after enough players join.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 120
+        },
+        "lobbyJoinTimeoutTicks": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "description": "Finite matches only: abort the lobby when the roster is still short of minPlayers after this many lobby ticks (24 ticks = 1s), declaring the stuck seat via COGAME_PLAYER_FAILURE_URI so the platform charges the no-show to that policy. 0 = wait forever (default). The clock runs on lobby ticks, so board bake time never eats the budget."
+        },
+        "gameOverTicks": {
+          "description": "Game over display duration in ticks.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 360
+        },
+        "maxTicks": {
+          "description": "Maximum game ticks before tiebreak, where 0 means no limit.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 10000
+        },
+        "maxGames": {
+          "description": "Maximum games before shutdown.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "showPlayerLabels": {
+          "description": "Show player labels.",
+          "type": "boolean",
+          "default": true
+        },
+        "fastMode": {
+          "description": "Advance frames early when all players report ready.",
+          "type": "boolean",
+          "default": true
+        },
+        "mapPath": {
+          "description": "Arena map identifier (procedurally generated).",
+          "type": "string",
+          "default": "arena"
+        },
+        "num_agents": {
+          "description": "Number of agent seats; must equal the player slot count. Used by the platform ladder service for block seating.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32,
+          "default": 16
+        },
+        "fireWindupTicks": {
+          "description": "Ticks from trigger pull to the shot releasing (~0.2s at 24 ticks/s). Aim locks at the pull; a peeking target can duck back behind cover before the bullet leaves.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 5
+        },
+        "teams": {
+          "description": "Active team count: 2 (classic sides), 4 (corner/plus free-for-all), 8 (half-field battle-royale duos), or 16 (full battle-royale, brMode).",
+          "type": "integer",
+          "enum": [
+            2,
+            4,
+            8,
+            16
+          ]
+        },
+        "mapLayout": {
+          "description": "Generated-map layout lock: sides, corners, or plus. Empty draws corners/plus from the map seed for 4-team games.",
+          "type": "string",
+          "enum": [
+            "sides",
+            "corners",
+            "plus"
+          ]
+        },
+        "mapSeed": {
+          "description": "Terrain seed for mapPath gen/pool; -1 derives from the per-episode game seed.",
+          "type": "integer"
+        },
+        "scoring": {
+          "description": "End-of-game reward rule. \"classic\": the winning team scores +1 per losing team and each loser -1. \"pot\": every team antes one point and the winning team takes the whole pot, the losing teams splitting the forfeit evenly - 2 teams pay +2/-2, 4 teams pay +4/-1/-1/-1.",
+          "type": "string",
+          "enum": [
+            "classic",
+            "pot"
+          ],
+          "default": "classic"
+        },
+        "mapSize": {
+          "description": "Generated-map size-class lock: small, standard, large, huge, or giant. Empty draws the size from the map seed.",
+          "type": "string",
+          "enum": [
+            "small",
+            "standard",
+            "large",
+            "huge",
+            "giant"
+          ]
+        },
+        "handicaps": {
+          "description": "Per-team handicap that weakens a team, keyed by team name. Each value is 0..1: 0 = normal, 1 = 50% of shots miss, 1 life, 1 hit point, half max speed; values in between interpolate linearly. Omitted teams are unhandicapped. Intended for a league to level a dominating team.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "red": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "blue": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "green": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "yellow": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "mapSpec": {
+          "description": "Full expanded map geometry (obstacles, trenches, endzones, and \u2014 for a battle-royale map \u2014 spawn points/spawnGroups and the four neutral item pools) as a JSON object. Pins an exact authored map \u2014 e.g. a league board cell's custom organic terrain, or a generated flagless BR map \u2014 overriding mapPath/mapSeed/mapSize. Same format the replay config carries.",
+          "type": "object"
+        },
+        "brMode": {
+          "description": "Battle-royale elimination ruleset (docs/designs/BR_MAPGEN.md \u00a71): no respawns (a death is permanent for the round), last team standing wins, flags never end or score the round, and a stalled timeout resolves by tiebreak (most living players, then total damage dealt) instead of an automatic draw. Off by default; the battle-royale variant turns it on.",
+          "type": "boolean",
+          "default": false
+        },
+        "season2Shell": {
+          "description": "Master gate for the Season 2 play-calling shell. On by default; the Season 2 shell is the default and only supported mode \u2014 legacy variants are deprecated.",
+          "type": "boolean",
+          "default": true
+        },
+        "allowDeprecatedModes": {
+          "description": "This config is allowed to run deprecated modes. Deprecated modes are refused at live boot since 0.7.253 unless this override is true.",
+          "type": "boolean",
+          "default": false
+        },
+        "viewIntervalTicks": {
+          "description": "PlayView frame interval in game ticks for play seats. No effect without a play seat.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 48,
+          "default": 6
+        },
+        "lobbyChatTicks": {
+          "description": "Season 2 lobby-chat phase length in game ticks. 0 disables the phase.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4320,
+          "default": 720
+        },
+        "playSeatBindTicks": {
+          "description": "Cumulative pre-activation presence budget in game ticks for play seats. Required positive in a play-seat episode.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 14400,
+          "default": 7200
+        },
+        "zonePhases": {
+          "description": "Battle-royale closing-zone schedule: a list of {z, waitTicks, shrinkTicks, dps} phases (docs/designs/BR_MAPGEN.md \u00a74.3). z (0 < z <= 1) is the target scale relative to the full map, strictly decreasing phase over phase (including the implicit phase-0 value of 1.0); waitTicks holds the previous rect before shrinking; shrinkTicks linearly interpolates into the target; dps is hit points per continuous second spent outside the current rect (through the shield layer first). Omitted/empty (the engine default) turns the mode off entirely - no draw, no rect, no damage. At most 8 phases.",
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 8,
+          "default": [],
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "z"
+            ],
+            "properties": {
+              "z": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 1
+              },
+              "waitTicks": {
+                "type": "integer",
+                "minimum": 0,
+                "default": 0
+              },
+              "shrinkTicks": {
+                "type": "integer",
+                "minimum": 0,
+                "default": 0
+              },
+              "dps": {
+                "type": "integer",
+                "minimum": 0,
+                "default": 0
+              }
+            }
+          }
+        },
+        "zoneCenter": {
+          "description": "Optional authored [x, y] map-pixel point the shrink zone closes on, overriding the default per-episode random draw. Only meaningful when zonePhases is non-empty.",
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "integer"
+          }
+        },
+        "lootStart": {
+          "description": "Battle-royale loot-start: every seat spawns unarmed (no gun, no hopper). The gun's two lootable halves \u2014 the marker (hasGun) and the hopper, its ammo (hasHopper) \u2014 wait as one-shot crates on the map's authored weaponSpawns/hopperSpawns (or the grenade/med-kit points when absent); a cog needs both to fire. Requires brMode: true. Off by default. DELIBERATE OFF-SWITCH (2026-09-04 owner simplification, PKG-A): the battle-royale-s2 variant previously turned this on and now matches the default, alongside downedMode/giveItem/dropItem/the loot-seed knobs/bandagePickups \u2014 every key stays present at its explicit off value (one-token rollback), not deleted. Flip true to re-arm.",
+          "type": "boolean",
+          "default": false
+        },
+        "downedMode": {
+          "description": "Battle-royale ghost-tag-revive: a lethal hit downs a cog into a frozen, non-colliding ghost instead of killing it outright. The ghost stays alive on the wire (that is what makes it revivable) \u2014 an upright teammate within DownedTagRange for downedReviveTicks tags it back in at 1 hp; an enemy gun hit splats it for an immediate confirmed elimination; an untagged ghost bleeds out after downedBleedOutTicks (halved per successive down while downedEscalation holds). Requires brMode: true. Off by default. DELIBERATE OFF-SWITCH (2026-09-04 owner simplification, PKG-A): the battle-royale-s2 variant previously turned this on at the ruled default timing (downedBleedOutTicks 360, downedReviveTicks 48, downedEscalation on \u2014 those defaults still apply if re-armed) and now matches the default. Flip true to re-arm.",
+          "type": "boolean",
+          "default": false
+        },
+        "giveItem": {
+          "description": "Battle-royale play-called item exchange: a seat with a DECLARED handoff (declareHandoff \u2014 the engine seam for the play shell's HANDOFF play) that holds GiveItemRange adjacency to its duo partner for GiveChannelTicks transfers the declared item (gun, hopper, or bandage) to that partner, emitting the item_give wire row {actor, recipient, item, tick}. No declaration, no transfer \u2014 proximity alone never moves an item (owner ruling 2026-09-02: no auto-share). Requires brMode: true. Off by default; armed only on explicit go.",
+          "type": "boolean",
+          "default": false
+        },
+        "dropItem": {
+          "description": "Button-chord item drop (owner ruling 2026-09-03): holding the aim-pair chord \u2014 ButtonB and ButtonSelect together, a dead no-op the engine ignores for aim (applyInput turns only on b != select), so no existing replay ever used it \u2014 for DropChordTicks (~10, ~0.4s) WHILE carrying a droppable spills the highest-priority carried item (spray can first, then marker, hopper, grenade, barrier, bandage) to the ground as a no-respawn item, emitting the item_drop wire row {dropper, item, tick, x, y}. Dropping a spray can clears hasSprayPaint, handing the gun back (canFire's not-hasSprayPaint guard) \u2014 the only exit from the spray lock. Anyone in range may then walk it up: OPEN steal, no team gate (Minecraft-style), the dropper alone waiting DropperRegrabTicks (~1s) before re-grabbing its own drop. Coexists with giveItem \u2014 drop is the free/flexible path, handoff still guarantees partner delivery. Human seat binds it to Q; a policy emits it via its Act (both rotate bits). Off by default. DELIBERATE OFF-SWITCH (2026-09-04 owner simplification, PKG-A): the battle-royale-s2 variant previously turned this on and now matches the default. Rollback = flip true, no code change, to re-arm.",
+          "type": "boolean",
+          "default": false
+        },
+        "zoneDamageByPaint": {
+          "description": "Zone damage = painted cells (owner order 2026-09-03): the closing ring damages a seat IFF the seat's cell is PAINTED \u2014 the shared zone-paint arrival field has reached it \u2014 replacing the invisible rectangle-membership test, so the visual and the mechanic are one surface. Cadence, dps, environment attribution (source -1, weapon zone) and the kill cause are byte-identical to rect semantics; only the membership verdict changes. Requires zonePhases. Off by default (rect semantics); arming is a SEMANTICS ERA boundary \u2014 zone-down counts never pool across the flip. The battle-royale-s2 variant turns it on.",
+          "type": "boolean",
+          "default": false
+        },
+        "zonePaintDownedBleedPermille": {
+          "description": "Bleed-out clock rate, permille, for a DOWNED ghost whose cell is painted (glory-2 amendment 1): 1000 = no acceleration; the default 2000 runs the clock 2x under paint, stacking with downedEscalation's halving. Acceleration only \u2014 a painted ghost still dies exclusively through the bleed-out window check, and the revive channel is untouched unless zoneBlocksRevive is also armed. Read only while zoneDamageByPaint is on; bounded [1000..5000] at config load (the never-instant-finalize spec floor stated as a bound).",
+          "type": "integer",
+          "default": 2000
+        },
+        "zoneBlocksRevive": {
+          "description": "No rescues on lethal ground (owner ruling 2026-09-03: \"how can you revive in paint? you should die if in paint\"): a DOWNED ghost whose own cell is PAINTED cannot be revived. The partner revive channel never accrues while the body lies in paint, and progress banked earlier on dry ground resets the tick the paint front reaches it \u2014 the same reset the channel already takes when the tag breaks \u2014 so the (zonePaintDownedBleedPermille-accelerated) bleed finishes the ghost. The verdict is the zone DAMAGE verdict: the same painted-cell test on the same arrival field, so if the ground would damage you it also blocks your rescue. Requires zoneDamageByPaint. Off by default (rescues under paint stay possible, byte-identical to the pre-flag engine). The battle-royale-s2 variant turns it on: it is the root fix for the revive-loop that let a duo mint tag-backs forever inside the closing ring.",
+          "type": "boolean",
+          "default": false
+        },
+        "allowSeatTakeover": {
+          "description": "Allow a human client to take over a live bot-controlled seat mid-round.",
+          "type": "boolean",
+          "default": false
+        },
+        "allowDirectAim": {
+          "description": "Allow a seat's aim to be driven directly (human mouse/stick aim) instead of only the discrete rotate buttons. Required by allowAimAssist.",
+          "type": "boolean",
+          "default": false
+        },
+        "allowAimAssist": {
+          "description": "Snap a human's aim onto a live enemy's windup intercept when already close, within aimAssistConeBrads. Requires allowDirectAim: true; rejected otherwise.",
+          "type": "boolean",
+          "default": false
+        },
+        "allowCallouts": {
+          "description": "Allow the human-client grid-cell callout affordance on top of the base 10-character shout.",
+          "type": "boolean",
+          "default": false
+        },
+        "perks": {
+          "perkVocabulary": [
+            {
+              "id": "armor",
+              "effect": "+1 max hp"
+            },
+            {
+              "id": "scope",
+              "effect": "50% tighter gun aim"
+            },
+            {
+              "id": "grenade",
+              "effect": "+25% throw range"
+            },
+            {
+              "id": "thruster",
+              "effect": "+10% max speed"
+            },
+            {
+              "id": "luck",
+              "effect": "10% of landed gun shots deal 2 damage"
+            }
+          ],
+          "description": "Per-team perk buffs, keyed by team name. Vocabulary: armor (+1 max hp), scope (50% tighter gun aim), grenade (+25% throw range), thruster (+10% max speed), luck (10% of landed gun shots deal 2 damage) \u2014 magnitudes tunable via perkMods. A team's value is a flat array of perk names (the whole team shares them), an array of such arrays (per-policy groups for 2v2 seats, dealt to the team's distinct policies in join order), or an object keyed by policy name pinning each group to exactly that policy (unmatched policies get nothing). Omitted teams have no perks.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "red": {
+              "type": [
+                "array",
+                "object"
+              ]
+            },
+            "blue": {
+              "type": [
+                "array",
+                "object"
+              ]
+            },
+            "green": {
+              "type": [
+                "array",
+                "object"
+              ]
+            },
+            "yellow": {
+              "type": [
+                "array",
+                "object"
+              ]
+            }
+          }
+        },
+        "perkMods": {
+          "description": "Perk magnitude overrides. Fractions are 0..1: scopeAim = fraction of aim deviation removed, grenadeRange/thrusterSpeed = extra range/speed, luckChance = chance a landed shot is lucky; armorHp/luckDamage are hit-point counts (0..100).",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "armorHp": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "scopeAim": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "grenadeRange": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "thrusterSpeed": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "luckChance": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "luckDamage": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "barrierPickups": {
+          "description": "Cardboard-barrier pickups per team, staged between base and center. A carried barrier places with the grenade button as a standing half-hex that blocks paint but not sight, takes 10 paintball hits, and is flattened by any cog that drives into it; carrying one excludes carrying a grenade. 0 disables the item (the default).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2,
+          "default": 0
+        },
+        "barrageMaxPerSec": {
+          "description": "Grenade-barrage endgame: the launch rate the bombardment ramps up to, in grenades/second across the whole board. 0 disables the mode; requires maxTicks > 0 when set. With the barrage on, the time limit no longer ends the game \u2014 it plays past 0:00 under full bombardment until one team is wiped.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 50,
+          "default": 0
+        },
+        "barrageStartPerSec": {
+          "description": "Grenade-barrage launch rate at the latch, along the map edges, grenades/second.",
+          "type": "integer",
+          "minimum": 1,
+          "default": 4
+        },
+        "barrageStartSec": {
+          "description": "Clock seconds remaining that latch the barrage on (30 = starts at 4:30 on a 5:00 clock).",
+          "type": "integer",
+          "minimum": 1,
+          "default": 30
+        },
+        "barrageSaturateSec": {
+          "description": "Seconds from the latch until full saturation: whole board targeted at barrageMaxPerSec (30 = saturated exactly at 5:00 with the default start).",
+          "type": "integer",
+          "minimum": 1,
+          "default": 30
+        },
+        "cogsPerTeam": {
+          "type": "integer",
+          "default": 1,
+          "description": "Cogs one seat commands. Classic fields one; values above 1 arm the deprecated squad mode (paintball sets 4: RED-alpha..RED-delta)."
+        },
+        "sprayDamage": {
+          "type": "integer",
+          "default": 3,
+          "description": "Hit points removed by one spray-cone touch."
+        },
+        "turnTicks": {
+          "type": "integer",
+          "default": 108,
+          "description": "Sim ticks per decision turn (4.5 s)."
+        },
+        "turnBudgetMs": {
+          "type": "integer",
+          "default": 10000,
+          "description": "Monotonic cap on one whole decision turn."
+        },
+        "attempt1Ms": {
+          "type": "integer",
+          "default": 6000,
+          "description": "First parallel batch deadline; whole seconds only."
+        },
+        "retryMs": {
+          "type": "integer",
+          "default": 3000,
+          "description": "Single retry batch deadline; whole seconds only."
+        },
+        "turnSpacingMs": {
+          "type": "integer",
+          "default": 5000,
+          "description": "Wall-clock floor between LLM batch starts."
+        },
+        "wallClockBudgetSeconds": {
+          "type": "integer",
+          "default": 690,
+          "description": "Engine hard stop; 57.5% of episodeTimeoutSeconds."
+        },
+        "loadout": {
+          "type": "string",
+          "enum": [
+            "ctf",
+            "paintball"
+          ],
+          "default": "ctf"
+        },
+        "floorPaint": {
+          "type": "boolean",
+          "default": false
+        },
+        "paintBuff": {
+          "type": "boolean",
+          "default": false
+        },
+        "hill": {
+          "type": "boolean",
+          "default": false
+        },
+        "paintTile": {
+          "type": "integer",
+          "default": 34
+        },
+        "hillRadiusTiles": {
+          "type": "integer",
+          "default": 2
+        },
+        "hillOwnPermille": {
+          "type": "integer",
+          "default": 800
+        },
+        "hillDecisiveTicks": {
+          "type": "integer",
+          "default": 720
+        },
+        "paintSpeedOwnPct": {
+          "type": "integer",
+          "default": 125
+        },
+        "paintSpeedEnemyPct": {
+          "type": "integer",
+          "default": 85
+        },
+        "paintHealTicks": {
+          "type": "integer",
+          "default": 48
+        },
+        "model": {
+          "type": "string",
+          "default": "",
+          "description": "Pinned Anthropic model id; empty = the default ladder."
+        },
+        "maxOutputTokens": {
+          "type": "integer",
+          "default": 900
+        },
+        "regimes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "items": {
+            "type": "string",
+            "enum": [
+              "resident",
+              "visitor"
+            ]
+          },
+          "default": [
+            "resident"
+          ],
+          "description": "Which cogs a seat drives, per game index."
+        },
+        "gloryMultiplierRecut": {
+          "description": "GLORY v13 multiplier recut (frozen 2026-09-02 contract): the pure-multiplier economy \u2014 no base points; episode score = seed(1) x the product of integer act multipliers, divided by 2 per friendly-fire step (BR: every incident; CTF: every second incident). Applies to BOTH modes (does not require brMode). Off by default everywhere: merged+deployed is NOT armed \u2014 arming is an explicit, separate manifest publish of this one key on the chosen variant.",
+          "type": "boolean",
+          "default": false
+        },
+        "winAsMultiplier": {
+          "description": "GLORY win-as-multiplier (Amendment 6/7, frozen \u00a7A6 even-maximums table): retires the dVictory DEED for a deterministic, composition-neutral x4 BR win factor folded into the canonical product at finalize (no heat/territory/carry/stack \u2014 it is not a deed); adds dTagBack (x2, minted from revived events with tagger attribution) and dJointAct (x2, the 120-tick cross-duo damage-window predicate) to the priced economy; dClosingTime base rung 2 to 3. Equalizes BR base == CTF base == 7,077,888 exactly; BR total ceiling 28,311,552. Reads only while gloryMultiplierRecut is armed; the CTF win factor is deferred to CTF-arming. Off by default everywhere EXCEPT the battle-royale-s2 flagship variant, which ships it ARMED (the owner ship call \u2014 the key stays a rollback-only switch: flip it false on that variant and the v13 dVictory economy returns with no code change).",
+          "type": "boolean",
+          "default": false
+        },
+        "deedMintCaps": {
+          "description": "Per-episode deed MINT CAPS (mintcap, 2026-09-04 \u2014 the durable fix behind winAsMultiplier's re-arm; incident rollback d595f300). Gives every REPEATABLE deed \u2014 one whose per-duo mint count is not bounded by a scarce contested resource \u2014 a per-episode, per-duo mint budget: dTagBack 3, dJointAct 6, dDuoDown 4, dShieldSoak 3. The first cap mints fold their factor into the duo's product normally; every occurrence after that folds 1 and scores NOTHING (a flat budget, not diminishing rungs \u2014 a flat one is a hard bound and is auditable by counting wire events). Only the SCORE is bounded: the deed still mints, pops, counts, climbs heat and reaches the wire, so no achievement gate or analysis counter moves. Also drops the product saturation bound from the 2^62 int64 overflow guard (which sat ~2^38 above the design ceiling and so never fired when the dTagBack revive-loop printed 9.15e15) to 2^26 = 67,108,864, ~2.37x the 28,311,552 design ceiling \u2014 defense-in-depth layer 2, which should never bind if the caps hold. Every cap sits strictly above the frozen A6 ceiling recipe's own multiplicity for that deed, so the ruled superb episode (7,077,888) stays exactly reachable. Reads only while gloryMultiplierRecut is armed. ARMED 2026-09-04 on the battle-royale-s2 flagship variant (owner ruling, tg5 18:2x \u2014 caps-era rounds now gate the separate winAsMultiplier re-arm decision, held until N\u22653 rounds verify sane tops). Off by default everywhere else: with it off both the v12 additive world and the live v13-armed world are byte-identical; this key stays a rollback-only switch \u2014 flip it false on that variant and the pre-cap behavior returns with no code change.",
+          "type": "boolean",
+          "default": false
+        },
+        "achievementLightableModes": {
+          "description": "GLORY GRADIENT S4b (epic 25d9108e): achievements as lightable modes \u2014 generalizes the gun tree's own top-tier FIRST-claim precedent into a pinball-shaped \"bank lights the jackpot\" bonus for every achievement tree. When a team claims a tree's TOP tier, this counts how many of that SAME tree's four lower tiers the team already claimed this episode and folds an extra bonus (x1/x1/x2/x3/x4 by count 0-4) on top of the tier's existing price, composing multiplicatively with the existing FIRST-claim x3. A seat that only ever lands the rare top-tier act alone scores the same as today (count 0/1, no bonus); one that also banks the tree's easier tiers along the way scores more. Reads only while gloryMultiplierRecut is armed. Off by default everywhere: with it off this whole mechanism is unreached, byte-identical to today.",
+          "type": "boolean",
+          "default": false
+        },
+        "stampRealizedConfig": {
+          "description": "Realized-config stamp (recut contract Amendment 2): when true the engine emits, at episode finalize, a stamp of the build and flag set that ACTUALLY ran \u2014 {stampVersion, realizedBuild {gameVersion, gloryVersion, engineStamp}, variantId, flagSet as sorted key=value pairs} \u2014 into the events summary row and the episode log. Observability only; independent of every other flag. Off by default.",
+          "type": "boolean",
+          "default": false
+        },
+        "frameLoadoutFlags": {
+          "description": "PERCEPTION (glory-2 \u00a717): exposes each seat's hasGun/hasHopper booleans on the replay frame (roster + first-person self/map) and grants a play its OWN duo partner's hasGun/hasHopper \u2014 never an enemy's \u2014 for intelligent HANDOFF calling. Consumers derive armed = hasGun AND hasHopper; no third field is ever emitted. Independent of every other flag. Off by default.",
+          "type": "boolean",
+          "default": false
+        },
+        "brAssistRescueUngated": {
+          "description": "GLORY GRADIENT S6 SHIP (epic 25d9108e, gate ruling b): removes the classic-only gate ahead of the dAssist/dRescue mints (sim.nim, kill-resolution site) so battle royale mints them exactly like CTF already does \u2014 no new counter needed, deedCounts/deedGloryMass already report both deeds per-episode. Reads only while gloryMultiplierRecut is armed. Off by default everywhere except the battle-royale-s2 flagship variant, which ships it ARMED as one of the five S6 catalog-v3 switches (owner GLORYVERSION GO required) \u2014 a rollback-only switch: flip it false on that variant and BR mints neither deed again, no code change.",
+          "type": "boolean",
+          "default": false
+        },
+        "pactScopedWipeDown": {
+          "description": "GLORY GRADIENT S6 SHIP (epic 25d9108e, gate ruling c): retargets dDuoDown/dWipe to PACT SCOPE in battle royale \u2014 a kill that empties an opposing team currently pact-bound to at least one other team mints the pact-scope dDuoDown; a kill that leaves an entire opposing pact group with zero living players mints the pact-scope dWipe. Solo-vs-solo (no pact) is unaffected \u2014 dDuoDown/dWipe stay exactly as they are today. Reads only while gloryMultiplierRecut is armed. Off by default everywhere except the battle-royale-s2 flagship variant, ARMED as one of the five S6 catalog-v3 switches (owner GLORYVERSION GO required) \u2014 a rollback-only switch.",
+          "type": "boolean",
+          "default": false
+        },
+        "placementRampV3": {
+          "description": "GLORY GRADIENT S6 SHIP (epic 25d9108e, CATALOG-V3-DRAFT.md \u00a74): reprices dFinal8/dFinal4/dFinal2 from the frozen \u00d72/\u00d73/\u00d74 ladder to a percent-scaled 100/100/130, plus a continuous per-seat survival-duration credit so a non-winning survivor's points climb before reaching a milestone, not only at one. Pairs with gloryFixedPointScale to avoid truncating its own small percent factors early in an episode. Reads only while gloryMultiplierRecut is armed. Off by default everywhere except the battle-royale-s2 flagship variant, ARMED as one of the five S6 catalog-v3 switches (owner GLORYVERSION GO required) \u2014 a rollback-only switch.",
+          "type": "boolean",
+          "default": false
+        },
+        "gloryFixedPointScale": {
+          "description": "GLORY GRADIENT S6 SHIP (epic 25d9108e, CATALOG-V3-DRAFT.md \u00a79b, ruled representation): seeds the glory product at a 1024x fixed-point scale instead of the bare seed, and reads it back through a halving-order-safe accumulator (halve first, then strip the scale) so small v3 percent factors register instead of truncating away to a no-op. Every existing whole-integer class factor cancels the scale out exactly, so arming this alone changes no reported score. Reads only while gloryMultiplierRecut is armed. Off by default everywhere except the battle-royale-s2 flagship variant, ARMED as one of the five S6 catalog-v3 switches (owner GLORYVERSION GO required) \u2014 a rollback-only switch.",
+          "type": "boolean",
+          "default": false
+        },
+        "catalogV3Reprice": {
+          "description": "GLORY GRADIENT S6 SHIP (epic 25d9108e, gate ruling 1, CATALOG-V3-DRAFT.md's frozen static trial): selects the v3 percent-scaled reprice table (kill/heat/territory/stack classes) in place of the frozen v2 table this ships alongside GLORYVERSION 16\u219217. Switch OFF stays byte-identical to today's frozen table (proven by test_glory_s5_rig.nim's equivalence test and a pinned gameHash fixture) \u2014 this key is the one that actually changes it. The catalog's own static prediction puts CHOSEN-deed share of a seat's mid/top-band score at ~71%; the S5 Monte Carlo rig, calibrated against real census mint rates, measures ~49% under an admitted archetype-model compression (one Sharpshooter claim rate shared across archetypes) \u2014 a live re-measure after this ships (S6 follow-up, not this key) settles which number holds. Reads only while gloryMultiplierRecut is armed. Off by default everywhere except the battle-royale-s2 flagship variant, ARMED as one of the five S6 catalog-v3 switches (owner GLORYVERSION GO required) \u2014 a rollback-only switch: flip it false on that variant and the frozen v2 table returns with no code change.",
+          "type": "boolean",
+          "default": false
+        },
+        "variantId": {
+          "description": "Self-label: the manifest variant id this game_config was published under, echoed verbatim into the realized-config stamp and the replay header so replay-only audits can name the variant without platform access. The engine only reports it.",
+          "type": "string",
+          "default": ""
+        },
+        "lootSpawnSeedGuns": {
+          "description": "Spawn-area loot seeding (owner order 2026-09-03): number of gun crates appended to weaponSpawns around EACH duo spawn cluster at episode init, placed via the nearestWalkable expanding-ring guarantee within lootSpawnSeedRadius. Arms the field by accidental contact pickup (91.8% of seats never armed without it). Additive to the map's base loot pool. Requires lootStart: true. 0 = off (default).",
+          "type": "integer",
+          "default": 0
+        },
+        "lootSpawnSeedHoppers": {
+          "description": "Spawn-area loot seeding: hopper crates per duo spawn cluster, same placement mechanism and lootStart requirement as lootSpawnSeedGuns. 0 = off (default).",
+          "type": "integer",
+          "default": 0
+        },
+        "lootSpawnSeedRadius": {
+          "description": "Placement radius in px around each duo spawn cluster for seeded crates. 48 keeps the worst-case diagonal (~68px) inside the BR map pool's 70px guaranteed-clear spawn pocket while covering the duo's 24px SpawnShareStagger spread. Only meaningful when seed counts > 0.",
+          "type": "integer",
+          "default": 0
+        },
+        "hopperSiteTrafficPermille": {
+          "description": "Hopper crate SITE CLASS (per-mille, 0-1000). Marker crates fall back onto the map's grenade points (alleys and hotspots \u2014 the traffic class); hopper crates inherited the med-kit points (rooms and corners \u2014 the retreat class), which put the gun's ammo half where fights are not. Measured over 75 live episodes: hoppers were the most plentiful crate and the worst collected, 0.47x the marker's per-crate pickup rate, and no live map authors hopperSpawns of its own (0/75) so the fallback IS the live placement. This re-sites that share of the fallback hopper crates onto the traffic points, ring-offset off the marker so the gun's two halves stay two separate touches. Count is unchanged \u2014 crates move, none are added \u2014 so the hopper:marker per-crate pickup ratio isolates the site class. Requires lootStart: true. 0 = off (default, the inherited med-kit siting). DELIBERATE OFF-SWITCH (2026-09-04 owner simplification, PKG-A): the battle-royale-s2 variant previously ran 750 and now matches the default (moot anyway with lootStart off in the same variant). Set back to 750 (with lootStart: true) to re-arm.",
+          "type": "integer",
+          "default": 0
+        },
+        "bandagePickups": {
+          "description": "Number of bandage pickups placed on the map. A bandage is the carryable half of the healing economy: pocketed on touch up to BandageCarryCap (3) and self-applied for +1 hp after BandageApplyTicks (3s) without taking damage, so it heals between fights rather than during one, and it is transferable to a duo partner under giveItem. Placed in the RETREAT site class \u2014 the map's med-kit points, deduped \u2014 each ring-offset off its anchor so a bandage is a separate walk-over from a med kit still standing there. Pairs with medKitCount when the intent is bandages INSTEAD of kits. 0 = off (default). Capped at 64, the board's per-family object-id pool width.",
+          "type": "integer",
+          "default": 0
+        },
+        "medKitCount": {
+          "description": "Cap on placed med kits. -1 (default) keeps the map's own full set \u2014 a BR-pool map authors 29-49 of them; 0 places none (the ruled bandages-instead-of-kits arm); N keeps the map's first N points. Independent of bandagePickups: the two together set the healing economy's split between full-heal-on-touch and carryable +1 hp.",
+          "type": "integer",
+          "default": -1
+        },
+        "sprayCount": {
+          "description": "Cap on placed spray cans (owner directive 2026-09-05, \"far fewer paint cans\"; pre-pivot objbalance analysis rec B). -1 (default) keeps the map's own full set \u2014 the 11-map BR pool authors 34-58 of them; N keeps the map's first N points, same rule medKitCount already uses (deterministic, not reseeded per episode). A cap can only shrink the placed set.",
+          "type": "integer",
+          "default": -1
+        },
+        "grenadeCount": {
+          "description": "Target count of placed grenades (owner directive 2026-09-05, same rec-B analysis: grenades were the scarcest disposable \u2014 13-29 authored across the 11-map pool \u2014 and sprays the most common, the inversion of their intended rarity). -1 (default) keeps the map's own authored/formula set, byte-identical. 0..N (an authored count) keeps the map's first N points. Past the authored count this INJECTS extra copies, cycling back through the same authored sites ring-offset off their anchor (the same overflow idiom bandagePickups uses against its own RETREAT anchors) \u2014 a cap can only reduce, so raising supply needs this injection path. Capped at 64, the board's per-family object-id pool width.",
+          "type": "integer",
+          "default": -1
+        }
+      }
+    },
+    "results_schema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scores"
+      ],
+      "properties": {
+        "names": {
+          "description": "One player name or address per player slot.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "string"
+          }
+        },
+        "scores": {
+          "description": "One scalar score per player slot.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "number"
+          }
+        },
+        "win": {
+          "description": "One win flag per player slot.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "boolean"
+          }
+        },
+        "team": {
+          "description": "One team name (red or blue) per player slot.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "string"
+          }
+        },
+        "kills": {
+          "description": "One enemy-kill count per player slot; teammate kills are counted separately in teamKills.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "teamKills": {
+          "description": "One teammate-kill (backstab) count per player slot, kept apart from kills.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "hitDamage": {
+          "description": "Hit points this slot removed from ENEMIES across the episode; teammate damage is counted separately in teamHitDamage.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "teamHitDamage": {
+          "description": "Hit points this slot removed from its own TEAMMATES (friendly fire), kept apart from hitDamage.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "deaths": {
+          "description": "One death count per player slot.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "captures": {
+          "description": "One heart-capture count per player slot.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "achievements": {
+          "description": "Achievement ids earned per player slot across the episode's games (win-gated; see the game.achievements catalog).",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9_-]+$"
+            }
+          }
+        },
+        "residentScore": {
+          "description": "One entry per SEAT (roster.nim squadResultsJson: `for seat in 0 ..< seats`, seats = num_agents), not one per team \u2014 a 2-team-era assumption. Bounds match scores/win/team: 1..32.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "number"
+          }
+        },
+        "visitorScore": {
+          "description": "Per-seat, same as residentScore.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "number"
+          }
+        },
+        "hillTicks": {
+          "description": "Per-seat, same as residentScore.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "integer"
+          }
+        },
+        "residentHillTicks": {
+          "description": "Per-seat, same as residentScore.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "integer"
+          }
+        },
+        "visitorHillTicks": {
+          "description": "Per-seat, same as residentScore.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "integer"
+          }
+        },
+        "paintTiles": {
+          "description": "Per-seat, same as residentScore.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "integer"
+          }
+        },
+        "tagsDealt": {
+          "description": "Per-seat, same as residentScore.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "integer"
+          }
+        },
+        "teamTags": {
+          "description": "Tags landed on the seat's own teammates (friendly fire), kept apart from tagsDealt. Per-seat, same bounds as residentScore.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "integer"
+          }
+        },
+        "tagsTaken": {
+          "description": "Per-seat, same as residentScore.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "integer"
+          }
+        },
+        "llmTurns": {
+          "description": "Per-seat, same as residentScore.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "integer"
+          }
+        },
+        "fallbackTurns": {
+          "description": "Per-seat, same as residentScore.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "integer"
+          }
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "deadline",
+            "fault"
+          ]
+        },
+        "endRule": {
+          "type": "string",
+          "enum": [
+            "full_time",
+            "mercy",
+            "wipe",
+            "wall_clock",
+            "sim_fault",
+            "host_error"
+          ]
+        },
+        "games": {
+          "type": "integer"
+        },
+        "finalTick": {
+          "type": "integer"
+        },
+        "seed": {
+          "type": "integer"
+        }
+      }
+    },
+    "protocols": {
+      "player": {
+        "type": "uri",
+        "value": "https://github.com/Metta-AI/cogame-paintbot/blob/main/docs/POLICY_WASM.md"
+      },
+      "global": {
+        "type": "uri",
+        "value": "https://github.com/Metta-AI/cogame-paintbot/blob/main/docs/PROTOCOL.md"
+      }
+    },
+    "docs": {
+      "readme": {
+        "type": "uri",
+        "value": "https://github.com/Metta-AI/cogame-paintbot/blob/main/README.md"
+      },
+      "pages": [
+        {
+          "id": "policy-wasm.md",
+          "title": "Writing a policy",
+          "content": {
+            "type": "uri",
+            "value": "https://github.com/Metta-AI/cogame-paintbot/blob/main/docs/POLICY_WASM.md"
+          }
+        },
+        {
+          "id": "plays.md",
+          "title": "The plays",
+          "content": {
+            "type": "uri",
+            "value": "https://github.com/Metta-AI/cogame-paintbot/blob/main/docs/designs/BR_PLAYS.md"
+          }
+        },
+        {
+          "id": "rules.md",
+          "title": "Rules",
+          "content": {
+            "type": "uri",
+            "value": "https://github.com/Metta-AI/cogame-paintbot/blob/main/docs/RULES.md"
+          }
+        }
+      ]
+    },
+    "achievements": [
+      {
+        "id": "pacifist",
+        "name": "Pacifist",
+        "description": "Win a game in which no cog on your team attacked at all \u2014 no gun shots, grenades, or spray.",
+        "points": 25
+      },
+      {
+        "id": "spotless",
+        "name": "Spotless",
+        "description": "Win a game in which no cog on your team took damage; shield-absorbed hits still count.",
+        "points": 25
+      },
+      {
+        "id": "almost",
+        "name": "Almost",
+        "description": "Win a game with under 2 hit points of life left across the whole team \u2014 living hp plus any respawns still owed.",
+        "points": 50
+      },
+      {
+        "id": "grenadier",
+        "name": "Grenadier",
+        "description": "Win a game in which at least 80% of the damage your team dealt came from grenades.",
+        "points": 30
+      },
+      {
+        "id": "rambo",
+        "name": "Rambo",
+        "description": "Win a game in which a cog on your team killed more than 8 cogs in a single life, without respawning.",
+        "points": 40
+      },
+      {
+        "id": "medic",
+        "name": "Medic",
+        "description": "Win a game in which a cog on your team picked up 4 med kits in a single life.",
+        "points": 30
+      },
+      {
+        "id": "sniper",
+        "name": "Sniper",
+        "description": "Win a game in which every point of damage your team dealt came from the paintball gun \u2014 no grenades, no spray.",
+        "points": 30
+      },
+      {
+        "id": "banksy",
+        "name": "Banksy",
+        "description": "Win a game in which at least 90% of the damage your team dealt came from spray paint.",
+        "points": 30
+      },
+      {
+        "id": "pack",
+        "name": "Pack",
+        "description": "Win a game in which every cog on your team spent at least 90% of its time alive within a circle of 5% of the map's area of two or more teammates.",
+        "points": 40
+      },
+      {
+        "id": "pit-master",
+        "name": "Pit Master",
+        "description": "Win a game in which at least 90% of the damage your team dealt was dealt from inside a pit.",
+        "points": 40
+      },
+      {
+        "id": "heist",
+        "name": "Heist",
+        "description": "Win by carrying the enemy heart home without your team killing a single enemy.",
+        "points": 50
+      },
+      {
+        "id": "silent",
+        "name": "Silent",
+        "description": "Win a game in which nobody on your team shouted a single word.",
+        "points": 30
+      },
+      {
+        "id": "assassin",
+        "name": "Assassin",
+        "description": "Win a game in which a cog on your team landed 10 kill shots (gun or grenade, spray paint does not count) on cogs it had never damaged before in that life.",
+        "points": 50
+      },
+      {
+        "id": "lucky",
+        "name": "Lucky",
+        "description": "Win a game in which a cog on your team was caught in 5 grenade blasts and survived every one of them.",
+        "points": 40
+      }
+    ],
+    "player_runtime": "game-hosted"
+  },
+  "player": [
+    {
+      "type": "player",
+      "id": "starter-cautious",
+      "name": "Starter (cautious)",
+      "description": "The Season 2 'cautious' starter persona as a paintbot-wasm policy: uploads the reference playbook, chats in the lobby, calls and re-calls ladders from a live model when the platform sidecar is reachable and from its scripted persona turns otherwise.",
+      "file": "policies/wasm/dist/starter-cautious.wasm",
+      "source_url": "https://github.com/Metta-AI/cogame-paintbot/tree/main/policies/wasm/starter"
+    },
+    {
+      "type": "player",
+      "id": "starter-aggressive",
+      "name": "Starter (aggressive)",
+      "description": "The Season 2 'aggressive' starter persona as a paintbot-wasm policy: uploads the reference playbook, chats in the lobby, calls and re-calls ladders from a live model when the platform sidecar is reachable and from its scripted persona turns otherwise.",
+      "file": "policies/wasm/dist/starter-aggressive.wasm",
+      "source_url": "https://github.com/Metta-AI/cogame-paintbot/tree/main/policies/wasm/starter"
+    },
+    {
+      "type": "player",
+      "id": "starter-collaborative",
+      "name": "Starter (collaborative)",
+      "description": "The Season 2 'collaborative' starter persona as a paintbot-wasm policy: uploads the reference playbook, chats in the lobby, calls and re-calls ladders from a live model when the platform sidecar is reachable and from its scripted persona turns otherwise.",
+      "file": "policies/wasm/dist/starter-collaborative.wasm",
+      "source_url": "https://github.com/Metta-AI/cogame-paintbot/tree/main/policies/wasm/starter"
+    }
+  ],
+  "variants": [
+    {
+      "id": "battle-royale-s2",
+      "name": "Battle Royale \u2014 Season 2",
+      "description": "Season 2 battle royale, played by wasm policy files the game hosts: The 16-seat battle royale with the Season 2 play-calling shell armed: every seat is a play seat. Policies upload WebAssembly playbooks over the wire, talk in an open 600-tick (~25 s) lobby-chat window before the round, then drive their cogs by calling plays \u2014 an ordered ladder of named plays with typed parameters, replaced or retuned mid-match as the zone closes. The engine ships a public seven-play reference menu (docs/designs/BR_PLAYS.md): pact, edge_ride, bodyguard, jackal, target_law, supply_run, crossfire \u2014 the competitive floor every private playbook must beat. Same rules as classic Battle Royale at half the field: sixteen solo entrants, one policy per team, on a generated flagless map scaled to keep every entrant's share of territory (and the derived gun range) identical to the 32-seat giant, no respawns, six zone phases that close the field completely, last cog standing, classic scoring with placement bonuses.",
+      "game_config": {
+        "players": [
+          {
+            "name": "Player1"
+          },
+          {
+            "name": "Player2"
+          },
+          {
+            "name": "Player3"
+          },
+          {
+            "name": "Player4"
+          },
+          {
+            "name": "Player5"
+          },
+          {
+            "name": "Player6"
+          },
+          {
+            "name": "Player7"
+          },
+          {
+            "name": "Player8"
+          },
+          {
+            "name": "Player9"
+          },
+          {
+            "name": "Player10"
+          },
+          {
+            "name": "Player11"
+          },
+          {
+            "name": "Player12"
+          },
+          {
+            "name": "Player13"
+          },
+          {
+            "name": "Player14"
+          },
+          {
+            "name": "Player15"
+          },
+          {
+            "name": "Player16"
+          }
+        ],
+        "slots": [
+          {
+            "team": "red",
+            "control": "play"
+          },
+          {
+            "team": "blue",
+            "control": "play"
+          },
+          {
+            "team": "green",
+            "control": "play"
+          },
+          {
+            "team": "yellow",
+            "control": "play"
+          },
+          {
+            "team": "black",
+            "control": "play"
+          },
+          {
+            "team": "silver",
+            "control": "play"
+          },
+          {
+            "team": "ivory",
+            "control": "play"
+          },
+          {
+            "team": "pink",
+            "control": "play"
+          },
+          {
+            "team": "umber",
+            "control": "play"
+          },
+          {
+            "team": "rust",
+            "control": "play"
+          },
+          {
+            "team": "orange",
+            "control": "play"
+          },
+          {
+            "team": "plum",
+            "control": "play"
+          },
+          {
+            "team": "lime",
+            "control": "play"
+          },
+          {
+            "team": "navy",
+            "control": "play"
+          },
+          {
+            "team": "azure",
+            "control": "play"
+          },
+          {
+            "team": "peach",
+            "control": "play"
+          }
+        ],
+        "seed": 679961,
+        "num_agents": 16,
+        "minPlayers": 16,
+        "lives": 1,
+        "hitPoints": 4,
+        "respawnTicks": 72,
+        "gunRange": 1300,
+        "fireCooldownTicks": 12,
+        "carrierSpeedPct": 70,
+        "playerBouncePct": 40,
+        "aimTurnRate": 5,
+        "visionConeDeg": 60,
+        "visionBubble": 90,
+        "startWaitTicks": 120,
+        "lobbyJoinTimeoutTicks": 7200,
+        "gameOverTicks": 360,
+        "maxTicks": 10000,
+        "maxGames": 1,
+        "showPlayerLabels": true,
+        "teams": 16,
+        "fireWindupTicks": 5,
+        "barrageMaxPerSec": 0,
+        "mapPath": "brpool16",
+        "brMode": true,
+        "lootStart": false,
+        "downedMode": true,
+        "zoneDamageByPaint": true,
+        "zoneBlocksRevive": true,
+        "zonePhases": [
+          {
+            "z": 0.75,
+            "waitTicks": 259,
+            "shrinkTicks": 160,
+            "dps": 0
+          },
+          {
+            "z": 0.55,
+            "waitTicks": 0,
+            "shrinkTicks": 183,
+            "dps": 3
+          },
+          {
+            "z": 0.35,
+            "waitTicks": 0,
+            "shrinkTicks": 261,
+            "dps": 6
+          },
+          {
+            "z": 0.2,
+            "waitTicks": 0,
+            "shrinkTicks": 450,
+            "dps": 10
+          },
+          {
+            "z": 0.08,
+            "waitTicks": 0,
+            "shrinkTicks": 1163,
+            "dps": 15
+          },
+          {
+            "z": 0.001,
+            "waitTicks": 0,
+            "shrinkTicks": 1275,
+            "dps": 20
+          }
+        ],
+        "season2Shell": true,
+        "viewIntervalTicks": 6,
+        "lobbyChatTicks": 600,
+        "playSeatBindTicks": 7200,
+        "variantId": "battle-royale-s2",
+        "gloryMultiplierRecut": true,
+        "stampRealizedConfig": true,
+        "giveItem": false,
+        "dropItem": false,
+        "lootSpawnSeedGuns": 0,
+        "lootSpawnSeedHoppers": 0,
+        "lootSpawnSeedRadius": 0,
+        "hopperSiteTrafficPermille": 0,
+        "bandagePickups": 0,
+        "frameLoadoutFlags": true,
+        "winAsMultiplier": true,
+        "deedMintCaps": true,
+        "sprayCount": 6,
+        "grenadeCount": 22,
+        "brAssistRescueUngated": true,
+        "pactScopedWipeDown": true,
+        "placementRampV3": true,
+        "gloryFixedPointScale": true,
+        "catalogV3Reprice": true
+      }
+    }
+  ],
+  "certification": {
+    "players": [
+      {
+        "player_id": "starter-cautious"
+      },
+      {
+        "player_id": "starter-cautious"
+      },
+      {
+        "player_id": "starter-cautious"
+      },
+      {
+        "player_id": "starter-cautious"
+      },
+      {
+        "player_id": "starter-cautious"
+      },
+      {
+        "player_id": "starter-cautious"
+      },
+      {
+        "player_id": "starter-cautious"
+      },
+      {
+        "player_id": "starter-cautious"
+      },
+      {
+        "player_id": "starter-cautious"
+      },
+      {
+        "player_id": "starter-cautious"
+      },
+      {
+        "player_id": "starter-cautious"
+      },
+      {
+        "player_id": "starter-cautious"
+      },
+      {
+        "player_id": "starter-cautious"
+      },
+      {
+        "player_id": "starter-cautious"
+      },
+      {
+        "player_id": "starter-cautious"
+      },
+      {
+        "player_id": "starter-cautious"
+      }
+    ],
+    "game_config": {
+      "players": [
+        {
+          "name": "Player1"
+        },
+        {
+          "name": "Player2"
+        },
+        {
+          "name": "Player3"
+        },
+        {
+          "name": "Player4"
+        },
+        {
+          "name": "Player5"
+        },
+        {
+          "name": "Player6"
+        },
+        {
+          "name": "Player7"
+        },
+        {
+          "name": "Player8"
+        },
+        {
+          "name": "Player9"
+        },
+        {
+          "name": "Player10"
+        },
+        {
+          "name": "Player11"
+        },
+        {
+          "name": "Player12"
+        },
+        {
+          "name": "Player13"
+        },
+        {
+          "name": "Player14"
+        },
+        {
+          "name": "Player15"
+        },
+        {
+          "name": "Player16"
+        }
+      ],
+      "slots": [
+        {
+          "team": "red",
+          "control": "play"
+        },
+        {
+          "team": "blue",
+          "control": "play"
+        },
+        {
+          "team": "green",
+          "control": "play"
+        },
+        {
+          "team": "yellow",
+          "control": "play"
+        },
+        {
+          "team": "black",
+          "control": "play"
+        },
+        {
+          "team": "silver",
+          "control": "play"
+        },
+        {
+          "team": "ivory",
+          "control": "play"
+        },
+        {
+          "team": "pink",
+          "control": "play"
+        },
+        {
+          "team": "umber",
+          "control": "play"
+        },
+        {
+          "team": "rust",
+          "control": "play"
+        },
+        {
+          "team": "orange",
+          "control": "play"
+        },
+        {
+          "team": "plum",
+          "control": "play"
+        },
+        {
+          "team": "lime",
+          "control": "play"
+        },
+        {
+          "team": "navy",
+          "control": "play"
+        },
+        {
+          "team": "azure",
+          "control": "play"
+        },
+        {
+          "team": "peach",
+          "control": "play"
+        }
+      ],
+      "seed": 679961,
+      "num_agents": 16,
+      "minPlayers": 16,
+      "lives": 1,
+      "hitPoints": 4,
+      "respawnTicks": 72,
+      "gunRange": 1300,
+      "fireCooldownTicks": 12,
+      "carrierSpeedPct": 70,
+      "playerBouncePct": 40,
+      "aimTurnRate": 5,
+      "visionConeDeg": 60,
+      "visionBubble": 90,
+      "startWaitTicks": 48,
+      "lobbyJoinTimeoutTicks": 7200,
+      "gameOverTicks": 24,
+      "maxTicks": 720,
+      "maxGames": 1,
+      "showPlayerLabels": true,
+      "teams": 16,
+      "fireWindupTicks": 5,
+      "barrageMaxPerSec": 0,
+      "mapPath": "brpool16",
+      "brMode": true,
+      "lootStart": false,
+      "downedMode": true,
+      "zoneDamageByPaint": true,
+      "zoneBlocksRevive": true,
+      "zonePhases": [
+        {
+          "z": 0.75,
+          "waitTicks": 259,
+          "shrinkTicks": 160,
+          "dps": 0
+        },
+        {
+          "z": 0.55,
+          "waitTicks": 0,
+          "shrinkTicks": 183,
+          "dps": 3
+        },
+        {
+          "z": 0.35,
+          "waitTicks": 0,
+          "shrinkTicks": 261,
+          "dps": 6
+        },
+        {
+          "z": 0.2,
+          "waitTicks": 0,
+          "shrinkTicks": 450,
+          "dps": 10
+        },
+        {
+          "z": 0.08,
+          "waitTicks": 0,
+          "shrinkTicks": 1163,
+          "dps": 15
+        },
+        {
+          "z": 0.001,
+          "waitTicks": 0,
+          "shrinkTicks": 1275,
+          "dps": 20
+        }
+      ],
+      "season2Shell": true,
+      "viewIntervalTicks": 6,
+      "lobbyChatTicks": 240,
+      "playSeatBindTicks": 7200,
+      "variantId": "battle-royale-s2",
+      "gloryMultiplierRecut": true,
+      "stampRealizedConfig": true,
+      "giveItem": false,
+      "dropItem": false,
+      "lootSpawnSeedGuns": 0,
+      "lootSpawnSeedHoppers": 0,
+      "lootSpawnSeedRadius": 0,
+      "hopperSiteTrafficPermille": 0,
+      "bandagePickups": 0,
+      "frameLoadoutFlags": true,
+      "winAsMultiplier": true,
+      "deedMintCaps": true,
+      "sprayCount": 6,
+      "grenadeCount": 22,
+      "brAssistRescueUngated": true,
+      "pactScopedWipeDown": true,
+      "placementRampV3": true,
+      "gloryFixedPointScale": true,
+      "catalogV3Reprice": true
+    }
+  }
+}

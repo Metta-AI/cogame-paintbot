@@ -1,4 +1,5 @@
-# Build Docker. ONE image, TWO entrypoints: /bin/ctf (the game server, which
+# Build Docker. ONE image, THREE entrypoints: /bin/policy-host (the
+# game-hosted wasm seat runtime the game spawns per seat), /bin/ctf (the game server, which
 # also runs the paintball KOTH mode when the game config gates it on) and
 # /bin/paintball-player (the thin paintball seat registrar). The paintball
 # policy set is env-switched inside this same image (PLAYER_PROMPT vs
@@ -64,7 +65,13 @@ RUN tools/runtime_spike/fetch_deps.sh > /tmp/runtime_deps.env && \
     $NimFlags \
     --nimcache:/tmp/paintball-player-nimcache \
     --out:paintball-player \
-    src/paintball_player.nim
+    src/paintball_player.nim && \
+  WASMTIME_C_API="$wasmtime_root" nim c \
+    $NimFlags \
+    $CtfRuntimeFlags \
+    --nimcache:/tmp/policy-host-nimcache \
+    --out:policy-host \
+    src/policy_host.nim
 
 FROM build AS runtime-proof
 
@@ -94,6 +101,9 @@ RUN apt-get update && \
 WORKDIR /workspace/ctf
 COPY --from=build /workspace/ctf/ctf /bin/ctf
 COPY --from=build /workspace/ctf/paintball-player /bin/paintball-player
+# The game-hosted seat runtime: one process per wasm policy file
+# (src/policy_host.nim, docs/POLICY_WASM.md).
+COPY --from=build /workspace/ctf/policy-host /bin/policy-host
 COPY --from=build /workspace/ctf/*.json ./
 COPY --from=build /workspace/ctf/data ./data
 

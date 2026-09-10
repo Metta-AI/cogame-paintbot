@@ -88,3 +88,9 @@ copy of the Campaign league's (ladder disabled, campaign block with
 variant_ids 1v1/2v2/4ffa, Sonnet 5 strategist, 300 s rounds), the Season 2
 memberships are retired, and the baseline builds become the champions
 (daveey: baseline, daveey-1: baseline-rusher) and filler (baseline-guard).
+
+Campaign live (2026-09-10): paintbot-wasm:0.2.0 canonical
+(cow_5fd743cb-ed70-4b00-a535-b442121eda4e). The league's ladder commissioner
+state had to be cleared with POST /leagues/{id}/reset-rounds (the campaign
+brain refuses foreign state); campaign round 1 then ran a hosted 4ffa cell
+battle with daveey / daveey-1 / Baseline seats and the board shows territory.

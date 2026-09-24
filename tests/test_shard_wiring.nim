@@ -7,14 +7,13 @@
 ## reporting different suite totals (882 vs 859) is this mode's smell.
 ##
 ## This test asserts, from the checked-out sources themselves, that every
-## tests/test_*.nim is imported by at least one CI shard (or tests.nim).
-## Adding a test file without wiring it now fails the suite instead of
-## shrinking it.
+## tests/test_*.nim is imported by a shard (or tests.nim), or is run by its
+## dedicated CI step. Adding an unwired test file fails the suite.
 
 import std/[os, strutils, unittest, sets]
 
 suite "shard wiring":
-  test "every test file on disk is imported by a shard":
+  test "every test file on disk runs in CI":
     let testsDir = currentSourcePath().parentDir()
     var imported = initHashSet[string]()
     for carrier in ["shard_1.nim", "shard_2.nim", "shard_3.nim",
@@ -26,6 +25,10 @@ suite "shard wiring":
         let line = rawLine.strip().strip(chars = {','})
         if line.startsWith("test_"):
           imported.incl(line)
+    let workflow = readFile(testsDir / ".." / ".github" / "workflows" / "build.yml")
+    for standalone in ["test_starter_policy", "test_hosted_seats"]:
+      check workflow.contains(standalone & ".nim")
+      imported.incl(standalone)
     check imported.len > 0
     var dark: seq[string] = @[]
     for kind, path in walkDir(testsDir):

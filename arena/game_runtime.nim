@@ -143,6 +143,7 @@ proc step*(game: var ArenaGame, actions: openArray[SeatMessage]): ArenaStep =
   if game.finished:
     raise newException(CtfError, "Arena game has already finished.")
   var chats = newSeq[string](game.viewers.len)
+  var policyPages = newSeq[string](game.viewers.len)
   for action in actions:
     if action.seat < 0 or action.seat >= game.viewers.len:
       raise newException(CtfError, "Arena action seat is outside the roster.")
@@ -150,7 +151,8 @@ proc step*(game: var ArenaGame, actions: openArray[SeatMessage]): ArenaStep =
       action.payload,
       game.inputMasks[action.seat],
       game.pressedMasks[action.seat],
-      chats[action.seat]
+      chats[action.seat],
+      policyPages[action.seat]
     )
 
   var

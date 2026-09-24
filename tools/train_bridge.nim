@@ -169,7 +169,9 @@ proc step(bridge: var TrainingBridge, request: JsonNode): JsonNode =
 when isMainModule:
   assert paramCount() in 2 .. 3,
     "usage: train_bridge MANIFEST VARIANT [MAX_TICKS]"
-  let manifest = parseFile(paramStr(1))
+  let manifestPath = paramStr(1).absolutePath()
+  setCurrentDir(getAppFilename().parentDir())
+  let manifest = parseFile(manifestPath)
   let variant = paramStr(2)
   let maxTicks = if paramCount() == 3: parseInt(paramStr(3)) else: 0
   var bridge: TrainingBridge

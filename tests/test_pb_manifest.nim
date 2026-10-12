@@ -142,14 +142,10 @@ suite "paintbot manifest and deprecated variants":
       check worstTurnMs <= cfg["turnBudgetMs"].getInt()
       check worstSeconds <= budget
 
-  test "the LLM secret rides the game runnable under the game's own name":
-    ## The cooperative-hunting 2026-08-25 scar: the secret namespace must
-    ## equal game.name exactly, and upload 400s otherwise after a green
-    ## certify. The key is resolved GAME-side (llm.nim), so a missing secret
-    ## degrades paintball episodes to scripted and never touches classic ones.
+  test "hosted LLM uses the native gateway without provider secrets":
     let name = game["name"].getStr()
     check name == "paintbot"
     check "_" notin name
-    check game["runnable"]["env"]["ANTHROPIC_API_KEY_URI"].getStr() ==
-      "secret://coworld/" & name & "/anthropic_api_key"
+    doAssert game{"runnable"}{"env"}{"ANTHROPIC_API_KEY_URI"}.isNil,
+      "hosted LLM uses the platform sidecar without provider secrets"
     check game["runnable"]["run"][0].getStr() == "/bin/ctf"

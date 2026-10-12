@@ -26,7 +26,7 @@ layouts alone, can drive the protocol.
 | Connect as a play seat over the real protocol | `ws://host:port/player?slot=N&token=T`, upgraded by the server's play-seat transport |
 | Upload the playbook over the wire | 0xA0 ModuleUpload → `module_accepted` → `module_ready` with the server's own sha256 |
 | An LLM chooses the chat line and the play call | one model call per decision, two decisions per run, over whichever backend the environment selects |
-| It works on the hosted platform's LLM path | the sidecar's OpenAI-compatible `/v1/chat/completions` is the primary backend, gated on `AWS_ENDPOINT_URL_BEDROCK_RUNTIME` |
+| It works on the hosted platform's LLM path | the sidecar's OpenAI-compatible `/v1/chat/completions` is the primary backend, gated on `COWORLD_LLM_ENDPOINT` |
 | A mid-match re-call driven by a later model call | a second 0xA1 at a higher proposal id, accepted at epoch 2, with the standing ladder fed back to the model so the re-call is a revision |
 | The production validator is the oracle | a deliberately bad call comes back `call_rejected` with `reason` and the offending JSON path |
 
@@ -216,10 +216,10 @@ set to linux/amd64" (setup:
 
 **In a hosted tournament you pass no key at all.** The platform injects the
 sidecar environment into the pod, the harness detects
-`AWS_ENDPOINT_URL_BEDROCK_RUNTIME` and takes the Bedrock path automatically, and
+`COWORLD_LLM_ENDPOINT` and takes the Bedrock path automatically, and
 the image itself carries no credentials. That is the whole point of the backend
 order — see "The model backends" below. Upload with
-`--use-bedrock --bedrock-model <id>`.
+`--use-llm --llm-model <id>`.
 
 The server has to be reachable from inside the container: start it with
 `COGAME_HOST=0.0.0.0` and use `host.docker.internal` (Docker Desktop) or
@@ -282,8 +282,8 @@ command. See also the protocol quick reference in
 
 | Variable | Set by | Meaning |
 | --- | --- | --- |
-| `AWS_ENDPOINT_URL_BEDROCK_RUNTIME` | the platform, in a hosted pod | **presence selects the production backend.** Never hardcode it |
-| `BEDROCK_MODEL` | `--bedrock-model` at upload | the model id the sidecar backend calls; always preferred when set. A legacy Bedrock id or a canonical `vendor/model` slug both work — the sidecar resolves aliases. When absent, the harness falls back to the default model |
+| `COWORLD_LLM_ENDPOINT` | the platform, in a hosted pod | **presence selects the production backend.** Never hardcode it |
+| `COWORLD_LLM_MODEL` | `--llm-model` at upload | the model id the sidecar backend calls; always preferred when set. A legacy Bedrock id or a canonical `vendor/model` slug both work — the sidecar resolves aliases. When absent, the harness falls back to the default model |
 | `POC_LLM_PROTOCOL` | you, rarely | `bedrock` switches the sidecar call to the legacy `InvokeModel` shape. Opt-in escape hatch only |
 | `OPENROUTER_API_KEY` | you, for local dev | selects the OpenRouter backend when no sidecar is present |
 | `POC_MODEL` | you | OpenRouter model id (default `qwen/qwen3-30b-a3b-instruct-2507`); ignored on the sidecar path |
@@ -310,7 +310,7 @@ does **not** carry model credentials. The platform runs a per-pod proxy on
 loopback that holds the real identity and bills the call to this pod's player
 slot. It speaks **OpenAI-compatible chat completions, served by OpenRouter**.
 
-- `AWS_ENDPOINT_URL_BEDROCK_RUNTIME` (e.g. `http://127.0.0.1:9100`) is the
+- `COWORLD_LLM_ENDPOINT` (e.g. `http://127.0.0.1:9100`) is the
   signal that the hosted proxy is available. **The name is historical** — the
   sidecar began as a Bedrock proxy and kept the variable when OpenRouter
   routing became the serving path — so do not read it as "Bedrock only". Gate on
@@ -324,7 +324,7 @@ slot. It speaks **OpenAI-compatible chat completions, served by OpenRouter**.
   rejected outright (`_resolve_request_attribution`,
   `app_backend/.../job_runner/bedrock_sidecar.py:1387-1404`). Sending nothing is
   correct and safer. The header is stripped before the upstream call anyway.
-- `BEDROCK_MODEL` carries the model id from `--bedrock-model` at upload. It must
+- `COWORLD_LLM_MODEL` carries the model id from `--llm-model` at upload. It must
   be read, never hardcoded. Whatever string arrives is resolved through the
   sidecar's legacy-id alias table to a canonical OpenRouter slug and then checked
   against the model allowlist (`resolve_model`,
@@ -342,8 +342,8 @@ slot. It speaks **OpenAI-compatible chat completions, served by OpenRouter**.
   honoured once. Every call is timeout-bounded, because a slow call times the
   episode out and scores as a loss.
 
-To deploy: `coworld upload-policy ... --use-bedrock --bedrock-model <id>`.
-Without `--use-bedrock` the pod gets no sidecar and this backend never engages.
+To deploy: `coworld upload-policy ... --use-llm --llm-model <id>`.
+Without `--use-llm` the pod gets no sidecar and this backend never engages.
 
 **2. Direct OpenRouter — local development only.** Selected when
 `OPENROUTER_API_KEY` is set and no sidecar endpoint is present. Default model
@@ -629,7 +629,7 @@ Backend selection, all seven branches:
 sidecar                          -> sidecar-openai   {endpoint}/v1/chat/completions
 sidecar + OPENROUTER_API_KEY     -> sidecar-openai   (hosted wins)
 sidecar + POC_LLM_PROTOCOL=bedrock -> bedrock-invoke {endpoint}/model/{id}/invoke
-sidecar, no BEDROCK_MODEL        -> BrainError, refuses loudly
+sidecar, no COWORLD_LLM_MODEL        -> BrainError, refuses loudly
 OPENROUTER_API_KEY only          -> qwen/...         openrouter.ai/api/v1/chat/completions
 neither                          -> canned
 --canned                         -> canned (overrides everything)

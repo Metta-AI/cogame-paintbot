@@ -22,10 +22,7 @@
       "run": [
         "/bin/ctf"
       ],
-      "source_url": "https://github.com/Metta-AI/coworld-ctf/tree/main",
-      "env": {
-        "ANTHROPIC_API_KEY_URI": "secret://coworld/paintbot/anthropic_api_key"
-      }
+      "source_url": "https://github.com/Metta-AI/coworld-ctf/tree/main"
     },
     "config_schema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -349,16 +346,16 @@
           }
         },
         "mapSpec": {
-          "description": "Full expanded map geometry (obstacles, trenches, endzones, and — for a battle-royale map — spawn points/spawnGroups and the four neutral item pools) as a JSON object. Pins an exact authored map — e.g. a league board cell's custom organic terrain, or a generated flagless BR map — overriding mapPath/mapSeed/mapSize. Same format the replay config carries.",
+          "description": "Full expanded map geometry (obstacles, trenches, endzones, and \u2014 for a battle-royale map \u2014 spawn points/spawnGroups and the four neutral item pools) as a JSON object. Pins an exact authored map \u2014 e.g. a league board cell's custom organic terrain, or a generated flagless BR map \u2014 overriding mapPath/mapSeed/mapSize. Same format the replay config carries.",
           "type": "object"
         },
         "brMode": {
-          "description": "Battle-royale elimination ruleset (docs/designs/BR_MAPGEN.md §1): no respawns (a death is permanent for the round), last team standing wins, flags never end or score the round, and a stalled timeout resolves by tiebreak (most living players, then total damage dealt) instead of an automatic draw. Off by default; the battle-royale variant turns it on.",
+          "description": "Battle-royale elimination ruleset (docs/designs/BR_MAPGEN.md \u00a71): no respawns (a death is permanent for the round), last team standing wins, flags never end or score the round, and a stalled timeout resolves by tiebreak (most living players, then total damage dealt) instead of an automatic draw. Off by default; the battle-royale variant turns it on.",
           "type": "boolean",
           "default": false
         },
         "season2Shell": {
-          "description": "Master gate for the Season 2 play-calling shell. On by default; the Season 2 shell is the default and only supported mode — legacy variants are deprecated.",
+          "description": "Master gate for the Season 2 play-calling shell. On by default; the Season 2 shell is the default and only supported mode \u2014 legacy variants are deprecated.",
           "type": "boolean",
           "default": true
         },
@@ -389,7 +386,7 @@
           "default": 7200
         },
         "zonePhases": {
-          "description": "Battle-royale closing-zone schedule: a list of {z, waitTicks, shrinkTicks, dps} phases (docs/designs/BR_MAPGEN.md §4.3). z (0 < z <= 1) is the target scale relative to the full map, strictly decreasing phase over phase (including the implicit phase-0 value of 1.0); waitTicks holds the previous rect before shrinking; shrinkTicks linearly interpolates into the target; dps is hit points per continuous second spent outside the current rect (through the shield layer first). Omitted/empty (the engine default) turns the mode off entirely - no draw, no rect, no damage. At most 8 phases.",
+          "description": "Battle-royale closing-zone schedule: a list of {z, waitTicks, shrinkTicks, dps} phases (docs/designs/BR_MAPGEN.md \u00a74.3). z (0 < z <= 1) is the target scale relative to the full map, strictly decreasing phase over phase (including the implicit phase-0 value of 1.0); waitTicks holds the previous rect before shrinking; shrinkTicks linearly interpolates into the target; dps is hit points per continuous second spent outside the current rect (through the shield layer first). Omitted/empty (the engine default) turns the mode off entirely - no draw, no rect, no damage. At most 8 phases.",
           "type": "array",
           "minItems": 0,
           "maxItems": 8,
@@ -434,37 +431,37 @@
           }
         },
         "lootStart": {
-          "description": "Battle-royale loot-start: every seat spawns unarmed (no gun, no hopper). The gun's two lootable halves — the marker (hasGun) and the hopper, its ammo (hasHopper) — wait as one-shot crates on the map's authored weaponSpawns/hopperSpawns (or the grenade/med-kit points when absent); a cog needs both to fire. Requires brMode: true. Off by default. DELIBERATE OFF-SWITCH (2026-09-04 owner simplification, PKG-A): the battle-royale-s2 variant previously turned this on and now matches the default, alongside downedMode/giveItem/dropItem/the loot-seed knobs/bandagePickups — every key stays present at its explicit off value (one-token rollback), not deleted. Flip true to re-arm.",
+          "description": "Battle-royale loot-start: every seat spawns unarmed (no gun, no hopper). The gun's two lootable halves \u2014 the marker (hasGun) and the hopper, its ammo (hasHopper) \u2014 wait as one-shot crates on the map's authored weaponSpawns/hopperSpawns (or the grenade/med-kit points when absent); a cog needs both to fire. Requires brMode: true. Off by default. DELIBERATE OFF-SWITCH (2026-09-04 owner simplification, PKG-A): the battle-royale-s2 variant previously turned this on and now matches the default, alongside downedMode/giveItem/dropItem/the loot-seed knobs/bandagePickups \u2014 every key stays present at its explicit off value (one-token rollback), not deleted. Flip true to re-arm.",
           "type": "boolean",
           "default": false
         },
         "downedMode": {
-          "description": "Battle-royale ghost-tag-revive: a lethal hit downs a cog into a frozen, non-colliding ghost instead of killing it outright. The ghost stays alive on the wire (that is what makes it revivable) — an upright teammate within DownedTagRange for downedReviveTicks tags it back in at 1 hp; an enemy gun hit splats it for an immediate confirmed elimination; an untagged ghost bleeds out after downedBleedOutTicks (halved per successive down while downedEscalation holds). Requires brMode: true. Off by default. DELIBERATE OFF-SWITCH (2026-09-04 owner simplification, PKG-A): the battle-royale-s2 variant previously turned this on at the ruled default timing (downedBleedOutTicks 360, downedReviveTicks 48, downedEscalation on — those defaults still apply if re-armed) and now matches the default. Flip true to re-arm.",
+          "description": "Battle-royale ghost-tag-revive: a lethal hit downs a cog into a frozen, non-colliding ghost instead of killing it outright. The ghost stays alive on the wire (that is what makes it revivable) \u2014 an upright teammate within DownedTagRange for downedReviveTicks tags it back in at 1 hp; an enemy gun hit splats it for an immediate confirmed elimination; an untagged ghost bleeds out after downedBleedOutTicks (halved per successive down while downedEscalation holds). Requires brMode: true. Off by default. DELIBERATE OFF-SWITCH (2026-09-04 owner simplification, PKG-A): the battle-royale-s2 variant previously turned this on at the ruled default timing (downedBleedOutTicks 360, downedReviveTicks 48, downedEscalation on \u2014 those defaults still apply if re-armed) and now matches the default. Flip true to re-arm.",
           "type": "boolean",
           "default": false
         },
         "giveItem": {
-          "description": "Battle-royale play-called item exchange: a seat with a DECLARED handoff (declareHandoff — the engine seam for the play shell's HANDOFF play) that holds GiveItemRange adjacency to its duo partner for GiveChannelTicks transfers the declared item (gun, hopper, or bandage) to that partner, emitting the item_give wire row {actor, recipient, item, tick}. No declaration, no transfer — proximity alone never moves an item (owner ruling 2026-09-02: no auto-share). Requires brMode: true. Off by default; armed only on explicit go.",
+          "description": "Battle-royale play-called item exchange: a seat with a DECLARED handoff (declareHandoff \u2014 the engine seam for the play shell's HANDOFF play) that holds GiveItemRange adjacency to its duo partner for GiveChannelTicks transfers the declared item (gun, hopper, or bandage) to that partner, emitting the item_give wire row {actor, recipient, item, tick}. No declaration, no transfer \u2014 proximity alone never moves an item (owner ruling 2026-09-02: no auto-share). Requires brMode: true. Off by default; armed only on explicit go.",
           "type": "boolean",
           "default": false
         },
         "dropItem": {
-          "description": "Button-chord item drop (owner ruling 2026-09-03): holding the aim-pair chord — ButtonB and ButtonSelect together, a dead no-op the engine ignores for aim (applyInput turns only on b != select), so no existing replay ever used it — for DropChordTicks (~10, ~0.4s) WHILE carrying a droppable spills the highest-priority carried item (spray can first, then marker, hopper, grenade, barrier, bandage) to the ground as a no-respawn item, emitting the item_drop wire row {dropper, item, tick, x, y}. Dropping a spray can clears hasSprayPaint, handing the gun back (canFire's not-hasSprayPaint guard) — the only exit from the spray lock. Anyone in range may then walk it up: OPEN steal, no team gate (Minecraft-style), the dropper alone waiting DropperRegrabTicks (~1s) before re-grabbing its own drop. Coexists with giveItem — drop is the free/flexible path, handoff still guarantees partner delivery. Human seat binds it to Q; a policy emits it via its Act (both rotate bits). Off by default. DELIBERATE OFF-SWITCH (2026-09-04 owner simplification, PKG-A): the battle-royale-s2 variant previously turned this on and now matches the default. Rollback = flip true, no code change, to re-arm.",
+          "description": "Button-chord item drop (owner ruling 2026-09-03): holding the aim-pair chord \u2014 ButtonB and ButtonSelect together, a dead no-op the engine ignores for aim (applyInput turns only on b != select), so no existing replay ever used it \u2014 for DropChordTicks (~10, ~0.4s) WHILE carrying a droppable spills the highest-priority carried item (spray can first, then marker, hopper, grenade, barrier, bandage) to the ground as a no-respawn item, emitting the item_drop wire row {dropper, item, tick, x, y}. Dropping a spray can clears hasSprayPaint, handing the gun back (canFire's not-hasSprayPaint guard) \u2014 the only exit from the spray lock. Anyone in range may then walk it up: OPEN steal, no team gate (Minecraft-style), the dropper alone waiting DropperRegrabTicks (~1s) before re-grabbing its own drop. Coexists with giveItem \u2014 drop is the free/flexible path, handoff still guarantees partner delivery. Human seat binds it to Q; a policy emits it via its Act (both rotate bits). Off by default. DELIBERATE OFF-SWITCH (2026-09-04 owner simplification, PKG-A): the battle-royale-s2 variant previously turned this on and now matches the default. Rollback = flip true, no code change, to re-arm.",
           "type": "boolean",
           "default": false
         },
         "zoneDamageByPaint": {
-          "description": "Zone damage = painted cells (owner order 2026-09-03): the closing ring damages a seat IFF the seat's cell is PAINTED — the shared zone-paint arrival field has reached it — replacing the invisible rectangle-membership test, so the visual and the mechanic are one surface. Cadence, dps, environment attribution (source -1, weapon zone) and the kill cause are byte-identical to rect semantics; only the membership verdict changes. Requires zonePhases. Off by default (rect semantics); arming is a SEMANTICS ERA boundary — zone-down counts never pool across the flip. The battle-royale-s2 variant turns it on.",
+          "description": "Zone damage = painted cells (owner order 2026-09-03): the closing ring damages a seat IFF the seat's cell is PAINTED \u2014 the shared zone-paint arrival field has reached it \u2014 replacing the invisible rectangle-membership test, so the visual and the mechanic are one surface. Cadence, dps, environment attribution (source -1, weapon zone) and the kill cause are byte-identical to rect semantics; only the membership verdict changes. Requires zonePhases. Off by default (rect semantics); arming is a SEMANTICS ERA boundary \u2014 zone-down counts never pool across the flip. The battle-royale-s2 variant turns it on.",
           "type": "boolean",
           "default": false
         },
         "zonePaintDownedBleedPermille": {
-          "description": "Bleed-out clock rate, permille, for a DOWNED ghost whose cell is painted (glory-2 amendment 1): 1000 = no acceleration; the default 2000 runs the clock 2x under paint, stacking with downedEscalation's halving. Acceleration only — a painted ghost still dies exclusively through the bleed-out window check, and the revive channel is untouched unless zoneBlocksRevive is also armed. Read only while zoneDamageByPaint is on; bounded [1000..5000] at config load (the never-instant-finalize spec floor stated as a bound).",
+          "description": "Bleed-out clock rate, permille, for a DOWNED ghost whose cell is painted (glory-2 amendment 1): 1000 = no acceleration; the default 2000 runs the clock 2x under paint, stacking with downedEscalation's halving. Acceleration only \u2014 a painted ghost still dies exclusively through the bleed-out window check, and the revive channel is untouched unless zoneBlocksRevive is also armed. Read only while zoneDamageByPaint is on; bounded [1000..5000] at config load (the never-instant-finalize spec floor stated as a bound).",
           "type": "integer",
           "default": 2000
         },
         "zoneBlocksRevive": {
-          "description": "No rescues on lethal ground (owner ruling 2026-09-03: \"how can you revive in paint? you should die if in paint\"): a DOWNED ghost whose own cell is PAINTED cannot be revived. The partner revive channel never accrues while the body lies in paint, and progress banked earlier on dry ground resets the tick the paint front reaches it — the same reset the channel already takes when the tag breaks — so the (zonePaintDownedBleedPermille-accelerated) bleed finishes the ghost. The verdict is the zone DAMAGE verdict: the same painted-cell test on the same arrival field, so if the ground would damage you it also blocks your rescue. Requires zoneDamageByPaint. Off by default (rescues under paint stay possible, byte-identical to the pre-flag engine). The battle-royale-s2 variant turns it on: it is the root fix for the revive-loop that let a duo mint tag-backs forever inside the closing ring.",
+          "description": "No rescues on lethal ground (owner ruling 2026-09-03: \"how can you revive in paint? you should die if in paint\"): a DOWNED ghost whose own cell is PAINTED cannot be revived. The partner revive channel never accrues while the body lies in paint, and progress banked earlier on dry ground resets the tick the paint front reaches it \u2014 the same reset the channel already takes when the tag breaks \u2014 so the (zonePaintDownedBleedPermille-accelerated) bleed finishes the ghost. The verdict is the zone DAMAGE verdict: the same painted-cell test on the same arrival field, so if the ground would damage you it also blocks your rescue. Requires zoneDamageByPaint. Off by default (rescues under paint stay possible, byte-identical to the pre-flag engine). The battle-royale-s2 variant turns it on: it is the root fix for the revive-loop that let a duo mint tag-backs forever inside the closing ring.",
           "type": "boolean",
           "default": false
         },
@@ -511,7 +508,7 @@
               "effect": "10% of landed gun shots deal 2 damage"
             }
           ],
-          "description": "Per-team perk buffs, keyed by team name. Vocabulary: armor (+1 max hp), scope (50% tighter gun aim), grenade (+25% throw range), thruster (+10% max speed), luck (10% of landed gun shots deal 2 damage) — magnitudes tunable via perkMods. A team's value is a flat array of perk names (the whole team shares them), an array of such arrays (per-policy groups for 2v2 seats, dealt to the team's distinct policies in join order), or an object keyed by policy name pinning each group to exactly that policy (unmatched policies get nothing). Omitted teams have no perks.",
+          "description": "Per-team perk buffs, keyed by team name. Vocabulary: armor (+1 max hp), scope (50% tighter gun aim), grenade (+25% throw range), thruster (+10% max speed), luck (10% of landed gun shots deal 2 damage) \u2014 magnitudes tunable via perkMods. A team's value is a flat array of perk names (the whole team shares them), an array of such arrays (per-policy groups for 2v2 seats, dealt to the team's distinct policies in join order), or an object keyed by policy name pinning each group to exactly that policy (unmatched policies get nothing). Omitted teams have no perks.",
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -586,7 +583,7 @@
           "default": 0
         },
         "barrageMaxPerSec": {
-          "description": "Grenade-barrage endgame: the launch rate the bombardment ramps up to, in grenades/second across the whole board. 0 disables the mode; requires maxTicks > 0 when set. With the barrage on, the time limit no longer ends the game — it plays past 0:00 under full bombardment until one team is wiped.",
+          "description": "Grenade-barrage endgame: the launch rate the bombardment ramps up to, in grenades/second across the whole board. 0 disables the mode; requires maxTicks > 0 when set. With the barrage on, the time limit no longer ends the game \u2014 it plays past 0:00 under full bombardment until one team is wiped.",
           "type": "integer",
           "minimum": 0,
           "maximum": 50,
@@ -724,12 +721,12 @@
           "description": "Which cogs a seat drives, per game index."
         },
         "gloryMultiplierRecut": {
-          "description": "GLORY v13 multiplier recut (frozen 2026-09-02 contract): the pure-multiplier economy — no base points; episode score = seed(1) x the product of integer act multipliers, divided by 2 per friendly-fire step (BR: every incident; CTF: every second incident). Applies to BOTH modes (does not require brMode). Off by default everywhere: merged+deployed is NOT armed — arming is an explicit, separate manifest publish of this one key on the chosen variant.",
+          "description": "GLORY v13 multiplier recut (frozen 2026-09-02 contract): the pure-multiplier economy \u2014 no base points; episode score = seed(1) x the product of integer act multipliers, divided by 2 per friendly-fire step (BR: every incident; CTF: every second incident). Applies to BOTH modes (does not require brMode). Off by default everywhere: merged+deployed is NOT armed \u2014 arming is an explicit, separate manifest publish of this one key on the chosen variant.",
           "type": "boolean",
           "default": false
         },
         "winAsMultiplier": {
-          "description": "GLORY win-as-multiplier (Amendment 6/7, frozen §A6 even-maximums table): retires the dVictory DEED for a deterministic, composition-neutral x4 BR win factor folded into the canonical product at finalize (no heat/territory/carry/stack — it is not a deed); adds dTagBack (x2, minted from revived events with tagger attribution) and dJointAct (x2, the 120-tick cross-duo damage-window predicate) to the priced economy; dClosingTime base rung 2 to 3. Equalizes BR base == CTF base == 7,077,888 exactly; BR total ceiling 28,311,552. Reads only while gloryMultiplierRecut is armed; the CTF win factor is deferred to CTF-arming. Off by default everywhere EXCEPT the battle-royale-s2 flagship variant, which ships it ARMED (the owner ship call — the key stays a rollback-only switch: flip it false on that variant and the v13 dVictory economy returns with no code change).",
+          "description": "GLORY win-as-multiplier (Amendment 6/7, frozen \u00a7A6 even-maximums table): retires the dVictory DEED for a deterministic, composition-neutral x4 BR win factor folded into the canonical product at finalize (no heat/territory/carry/stack \u2014 it is not a deed); adds dTagBack (x2, minted from revived events with tagger attribution) and dJointAct (x2, the 120-tick cross-duo damage-window predicate) to the priced economy; dClosingTime base rung 2 to 3. Equalizes BR base == CTF base == 7,077,888 exactly; BR total ceiling 28,311,552. Reads only while gloryMultiplierRecut is armed; the CTF win factor is deferred to CTF-arming. Off by default everywhere EXCEPT the battle-royale-s2 flagship variant, which ships it ARMED (the owner ship call \u2014 the key stays a rollback-only switch: flip it false on that variant and the v13 dVictory economy returns with no code change).",
           "type": "boolean",
           "default": false
         },
@@ -739,42 +736,42 @@
           "default": false
         },
         "achievementLightableModes": {
-          "description": "GLORY GRADIENT S4b (epic 25d9108e): achievements as lightable modes — generalizes the gun tree's own top-tier FIRST-claim precedent into a pinball-shaped \"bank lights the jackpot\" bonus for every achievement tree. When a team claims a tree's TOP tier, this counts how many of that SAME tree's four lower tiers the team already claimed this episode and folds an extra bonus (x1/x1/x2/x3/x4 by count 0-4) on top of the tier's existing price, composing multiplicatively with the existing FIRST-claim x3. A seat that only ever lands the rare top-tier act alone scores the same as today (count 0/1, no bonus); one that also banks the tree's easier tiers along the way scores more. Reads only while gloryMultiplierRecut is armed. Off by default everywhere: with it off this whole mechanism is unreached, byte-identical to today.",
+          "description": "GLORY GRADIENT S4b (epic 25d9108e): achievements as lightable modes \u2014 generalizes the gun tree's own top-tier FIRST-claim precedent into a pinball-shaped \"bank lights the jackpot\" bonus for every achievement tree. When a team claims a tree's TOP tier, this counts how many of that SAME tree's four lower tiers the team already claimed this episode and folds an extra bonus (x1/x1/x2/x3/x4 by count 0-4) on top of the tier's existing price, composing multiplicatively with the existing FIRST-claim x3. A seat that only ever lands the rare top-tier act alone scores the same as today (count 0/1, no bonus); one that also banks the tree's easier tiers along the way scores more. Reads only while gloryMultiplierRecut is armed. Off by default everywhere: with it off this whole mechanism is unreached, byte-identical to today.",
           "type": "boolean",
           "default": false
         },
         "stampRealizedConfig": {
-          "description": "Realized-config stamp (recut contract Amendment 2): when true the engine emits, at episode finalize, a stamp of the build and flag set that ACTUALLY ran — {stampVersion, realizedBuild {gameVersion, gloryVersion, engineStamp}, variantId, flagSet as sorted key=value pairs} — into the events summary row and the episode log. Observability only; independent of every other flag. Off by default.",
+          "description": "Realized-config stamp (recut contract Amendment 2): when true the engine emits, at episode finalize, a stamp of the build and flag set that ACTUALLY ran \u2014 {stampVersion, realizedBuild {gameVersion, gloryVersion, engineStamp}, variantId, flagSet as sorted key=value pairs} \u2014 into the events summary row and the episode log. Observability only; independent of every other flag. Off by default.",
           "type": "boolean",
           "default": false
         },
         "frameLoadoutFlags": {
-          "description": "PERCEPTION (glory-2 §17): exposes each seat's hasGun/hasHopper booleans on the replay frame (roster + first-person self/map) and grants a play its OWN duo partner's hasGun/hasHopper — never an enemy's — for intelligent HANDOFF calling. Consumers derive armed = hasGun AND hasHopper; no third field is ever emitted. Independent of every other flag. Off by default.",
+          "description": "PERCEPTION (glory-2 \u00a717): exposes each seat's hasGun/hasHopper booleans on the replay frame (roster + first-person self/map) and grants a play its OWN duo partner's hasGun/hasHopper \u2014 never an enemy's \u2014 for intelligent HANDOFF calling. Consumers derive armed = hasGun AND hasHopper; no third field is ever emitted. Independent of every other flag. Off by default.",
           "type": "boolean",
           "default": false
         },
         "brAssistRescueUngated": {
-          "description": "GLORY GRADIENT S6 SHIP (epic 25d9108e, gate ruling b): removes the classic-only gate ahead of the dAssist/dRescue mints (sim.nim, kill-resolution site) so battle royale mints them exactly like CTF already does — no new counter needed, deedCounts/deedGloryMass already report both deeds per-episode. Reads only while gloryMultiplierRecut is armed. Off by default everywhere except the battle-royale-s2 flagship variant, which ships it ARMED as one of the five S6 catalog-v3 switches (owner GLORYVERSION GO required) — a rollback-only switch: flip it false on that variant and BR mints neither deed again, no code change.",
+          "description": "GLORY GRADIENT S6 SHIP (epic 25d9108e, gate ruling b): removes the classic-only gate ahead of the dAssist/dRescue mints (sim.nim, kill-resolution site) so battle royale mints them exactly like CTF already does \u2014 no new counter needed, deedCounts/deedGloryMass already report both deeds per-episode. Reads only while gloryMultiplierRecut is armed. Off by default everywhere except the battle-royale-s2 flagship variant, which ships it ARMED as one of the five S6 catalog-v3 switches (owner GLORYVERSION GO required) \u2014 a rollback-only switch: flip it false on that variant and BR mints neither deed again, no code change.",
           "type": "boolean",
           "default": false
         },
         "pactScopedWipeDown": {
-          "description": "GLORY GRADIENT S6 SHIP (epic 25d9108e, gate ruling c): retargets dDuoDown/dWipe to PACT SCOPE in battle royale — a kill that empties an opposing team currently pact-bound to at least one other team mints the pact-scope dDuoDown; a kill that leaves an entire opposing pact group with zero living players mints the pact-scope dWipe. Solo-vs-solo (no pact) is unaffected — dDuoDown/dWipe stay exactly as they are today. Reads only while gloryMultiplierRecut is armed. Off by default everywhere except the battle-royale-s2 flagship variant, ARMED as one of the five S6 catalog-v3 switches (owner GLORYVERSION GO required) — a rollback-only switch.",
+          "description": "GLORY GRADIENT S6 SHIP (epic 25d9108e, gate ruling c): retargets dDuoDown/dWipe to PACT SCOPE in battle royale \u2014 a kill that empties an opposing team currently pact-bound to at least one other team mints the pact-scope dDuoDown; a kill that leaves an entire opposing pact group with zero living players mints the pact-scope dWipe. Solo-vs-solo (no pact) is unaffected \u2014 dDuoDown/dWipe stay exactly as they are today. Reads only while gloryMultiplierRecut is armed. Off by default everywhere except the battle-royale-s2 flagship variant, ARMED as one of the five S6 catalog-v3 switches (owner GLORYVERSION GO required) \u2014 a rollback-only switch.",
           "type": "boolean",
           "default": false
         },
         "placementRampV3": {
-          "description": "GLORY GRADIENT S6 SHIP (epic 25d9108e, CATALOG-V3-DRAFT.md §4): reprices dFinal8/dFinal4/dFinal2 from the frozen ×2/×3/×4 ladder to a percent-scaled 100/100/130, plus a continuous per-seat survival-duration credit so a non-winning survivor's points climb before reaching a milestone, not only at one. Pairs with gloryFixedPointScale to avoid truncating its own small percent factors early in an episode. Reads only while gloryMultiplierRecut is armed. Off by default everywhere except the battle-royale-s2 flagship variant, ARMED as one of the five S6 catalog-v3 switches (owner GLORYVERSION GO required) — a rollback-only switch.",
+          "description": "GLORY GRADIENT S6 SHIP (epic 25d9108e, CATALOG-V3-DRAFT.md \u00a74): reprices dFinal8/dFinal4/dFinal2 from the frozen \u00d72/\u00d73/\u00d74 ladder to a percent-scaled 100/100/130, plus a continuous per-seat survival-duration credit so a non-winning survivor's points climb before reaching a milestone, not only at one. Pairs with gloryFixedPointScale to avoid truncating its own small percent factors early in an episode. Reads only while gloryMultiplierRecut is armed. Off by default everywhere except the battle-royale-s2 flagship variant, ARMED as one of the five S6 catalog-v3 switches (owner GLORYVERSION GO required) \u2014 a rollback-only switch.",
           "type": "boolean",
           "default": false
         },
         "gloryFixedPointScale": {
-          "description": "GLORY GRADIENT S6 SHIP (epic 25d9108e, CATALOG-V3-DRAFT.md §9b, ruled representation): seeds the glory product at a 1024x fixed-point scale instead of the bare seed, and reads it back through a halving-order-safe accumulator (halve first, then strip the scale) so small v3 percent factors register instead of truncating away to a no-op. Every existing whole-integer class factor cancels the scale out exactly, so arming this alone changes no reported score. Reads only while gloryMultiplierRecut is armed. Off by default everywhere except the battle-royale-s2 flagship variant, ARMED as one of the five S6 catalog-v3 switches (owner GLORYVERSION GO required) — a rollback-only switch.",
+          "description": "GLORY GRADIENT S6 SHIP (epic 25d9108e, CATALOG-V3-DRAFT.md \u00a79b, ruled representation): seeds the glory product at a 1024x fixed-point scale instead of the bare seed, and reads it back through a halving-order-safe accumulator (halve first, then strip the scale) so small v3 percent factors register instead of truncating away to a no-op. Every existing whole-integer class factor cancels the scale out exactly, so arming this alone changes no reported score. Reads only while gloryMultiplierRecut is armed. Off by default everywhere except the battle-royale-s2 flagship variant, ARMED as one of the five S6 catalog-v3 switches (owner GLORYVERSION GO required) \u2014 a rollback-only switch.",
           "type": "boolean",
           "default": false
         },
         "catalogV3Reprice": {
-          "description": "GLORY GRADIENT S6 SHIP (epic 25d9108e, gate ruling 1, CATALOG-V3-DRAFT.md's frozen static trial): selects the v3 percent-scaled reprice table (kill/heat/territory/stack classes) in place of the frozen v2 table this ships alongside GLORYVERSION 16→17. Switch OFF stays byte-identical to today's frozen table (proven by test_glory_s5_rig.nim's equivalence test and a pinned gameHash fixture) — this key is the one that actually changes it. The catalog's own static prediction puts CHOSEN-deed share of a seat's mid/top-band score at ~71%; the S5 Monte Carlo rig, calibrated against real census mint rates, measures ~49% under an admitted archetype-model compression (one Sharpshooter claim rate shared across archetypes) — a live re-measure after this ships (S6 follow-up, not this key) settles which number holds. Reads only while gloryMultiplierRecut is armed. Off by default everywhere except the battle-royale-s2 flagship variant, ARMED as one of the five S6 catalog-v3 switches (owner GLORYVERSION GO required) — a rollback-only switch: flip it false on that variant and the frozen v2 table returns with no code change.",
+          "description": "GLORY GRADIENT S6 SHIP (epic 25d9108e, gate ruling 1, CATALOG-V3-DRAFT.md's frozen static trial): selects the v3 percent-scaled reprice table (kill/heat/territory/stack classes) in place of the frozen v2 table this ships alongside GLORYVERSION 16\u219217. Switch OFF stays byte-identical to today's frozen table (proven by test_glory_s5_rig.nim's equivalence test and a pinned gameHash fixture) \u2014 this key is the one that actually changes it. The catalog's own static prediction puts CHOSEN-deed share of a seat's mid/top-band score at ~71%; the S5 Monte Carlo rig, calibrated against real census mint rates, measures ~49% under an admitted archetype-model compression (one Sharpshooter claim rate shared across archetypes) \u2014 a live re-measure after this ships (S6 follow-up, not this key) settles which number holds. Reads only while gloryMultiplierRecut is armed. Off by default everywhere except the battle-royale-s2 flagship variant, ARMED as one of the five S6 catalog-v3 switches (owner GLORYVERSION GO required) \u2014 a rollback-only switch: flip it false on that variant and the frozen v2 table returns with no code change.",
           "type": "boolean",
           "default": false
         },
@@ -943,7 +940,7 @@
           }
         },
         "residentScore": {
-          "description": "One entry per SEAT (roster.nim squadResultsJson: `for seat in 0 ..< seats`, seats = num_agents), not one per team — a 2-team-era assumption. Bounds match scores/win/team: 1..32.",
+          "description": "One entry per SEAT (roster.nim squadResultsJson: `for seat in 0 ..< seats`, seats = num_agents), not one per team \u2014 a 2-team-era assumption. Bounds match scores/win/team: 1..32.",
           "type": "array",
           "minItems": 1,
           "maxItems": 32,
@@ -1109,7 +1106,7 @@
       {
         "id": "pacifist",
         "name": "Pacifist",
-        "description": "Win a game in which no cog on your team attacked at all — no gun shots, grenades, or spray.",
+        "description": "Win a game in which no cog on your team attacked at all \u2014 no gun shots, grenades, or spray.",
         "points": 25
       },
       {
@@ -1121,7 +1118,7 @@
       {
         "id": "almost",
         "name": "Almost",
-        "description": "Win a game with under 2 hit points of life left across the whole team — living hp plus any respawns still owed.",
+        "description": "Win a game with under 2 hit points of life left across the whole team \u2014 living hp plus any respawns still owed.",
         "points": 50
       },
       {
@@ -1145,7 +1142,7 @@
       {
         "id": "sniper",
         "name": "Sniper",
-        "description": "Win a game in which every point of damage your team dealt came from the paintball gun — no grenades, no spray.",
+        "description": "Win a game in which every point of damage your team dealt came from the paintball gun \u2014 no grenades, no spray.",
         "points": 30
       },
       {
@@ -1217,8 +1214,8 @@
   "variants": [
     {
       "id": "battle-royale-s2",
-      "name": "Battle Royale — Season 2",
-      "description": "The 16-seat battle royale with the Season 2 play-calling shell armed: every seat is a play seat. Policies upload WebAssembly playbooks over the wire, talk in an open 600-tick (~25 s) lobby-chat window before the round, then drive their cogs by calling plays — an ordered ladder of named plays with typed parameters, replaced or retuned mid-match as the zone closes. The engine ships a public seven-play reference menu (docs/designs/BR_PLAYS.md): pact, edge_ride, bodyguard, jackal, target_law, supply_run, crossfire — the competitive floor every private playbook must beat. Same rules as classic Battle Royale at half the field: sixteen solo entrants, one policy per team, on a generated flagless map scaled to keep every entrant's share of territory (and the derived gun range) identical to the 32-seat giant, no respawns, six zone phases that close the field completely, last cog standing, classic scoring with placement bonuses.",
+      "name": "Battle Royale \u2014 Season 2",
+      "description": "The 16-seat battle royale with the Season 2 play-calling shell armed: every seat is a play seat. Policies upload WebAssembly playbooks over the wire, talk in an open 600-tick (~25 s) lobby-chat window before the round, then drive their cogs by calling plays \u2014 an ordered ladder of named plays with typed parameters, replaced or retuned mid-match as the zone closes. The engine ships a public seven-play reference menu (docs/designs/BR_PLAYS.md): pact, edge_ride, bodyguard, jackal, target_law, supply_run, crossfire \u2014 the competitive floor every private playbook must beat. Same rules as classic Battle Royale at half the field: sixteen solo entrants, one policy per team, on a generated flagless map scaled to keep every entrant's share of territory (and the derived gun range) identical to the 32-seat giant, no respawns, six zone phases that close the field completely, last cog standing, classic scoring with placement bonuses.",
       "game_config": {
         "players": [
           {
@@ -1430,8 +1427,8 @@
     },
     {
       "id": "battle-royale-s2-lootstart",
-      "name": "Battle Royale — Season 2 (loot-start only)",
-      "description": "STAGING variant (recut contract Amendment 2 §1 — per-flag activation): identical to battle-royale-s2 with ONLY lootStart armed; downedMode stays dark. Exists so the S2 flags can be staged/bisected one at a time instead of riding one coupled variant switch.",
+      "name": "Battle Royale \u2014 Season 2 (loot-start only)",
+      "description": "STAGING variant (recut contract Amendment 2 \u00a71 \u2014 per-flag activation): identical to battle-royale-s2 with ONLY lootStart armed; downedMode stays dark. Exists so the S2 flags can be staged/bisected one at a time instead of riding one coupled variant switch.",
       "game_config": {
         "players": [
           {
@@ -1621,8 +1618,8 @@
     },
     {
       "id": "battle-royale-s2-downed",
-      "name": "Battle Royale — Season 2 (downed-state only)",
-      "description": "STAGING variant (recut contract Amendment 2 §1 — per-flag activation): identical to battle-royale-s2 with ONLY downedMode armed; lootStart stays dark. Exists so the S2 flags can be staged/bisected one at a time instead of riding one coupled variant switch.",
+      "name": "Battle Royale \u2014 Season 2 (downed-state only)",
+      "description": "STAGING variant (recut contract Amendment 2 \u00a71 \u2014 per-flag activation): identical to battle-royale-s2 with ONLY downedMode armed; lootStart stays dark. Exists so the S2 flags can be staged/bisected one at a time instead of riding one coupled variant switch.",
       "game_config": {
         "players": [
           {
@@ -1946,7 +1943,7 @@
     {
       "id": "4ffa",
       "name": "4-team free-for-all",
-      "description": "Four teams — red, blue, green, yellow — one entrant policy per team (slot mod 4), each defending its own heart on a generated square corner or plus map. Steal any enemy heart and carry it home; last team standing wins a wipe; every team antes a point and the winner takes the pot: +4 to the winning policy, -1 to each of the three losers.",
+      "description": "Four teams \u2014 red, blue, green, yellow \u2014 one entrant policy per team (slot mod 4), each defending its own heart on a generated square corner or plus map. Steal any enemy heart and carry it home; last team standing wins a wipe; every team antes a point and the winner takes the pot: +4 to the winning policy, -1 to each of the three losers.",
       "game_config": {
         "players": [
           {
@@ -2079,7 +2076,7 @@
     {
       "id": "4ffa8",
       "name": "4-team free-for-all (8 per team)",
-      "description": "Four teams — red, blue, green, yellow — one entrant policy per team (slot mod 4) at double muster: 32 seats, 8 agents per team, always on a giant generated corner or plus map. Rules and scoring match 4ffa: steal any enemy heart and carry it home, last team standing wins a wipe, and every team antes a point with the winner taking the pot: +4 to the winning policy, -1 to each of the three losers.",
+      "description": "Four teams \u2014 red, blue, green, yellow \u2014 one entrant policy per team (slot mod 4) at double muster: 32 seats, 8 agents per team, always on a giant generated corner or plus map. Rules and scoring match 4ffa: steal any enemy heart and carry it home, last team standing wins a wipe, and every team antes a point with the winner taking the pot: +4 to the winning policy, -1 to each of the three losers.",
       "game_config": {
         "players": [
           {
@@ -2750,7 +2747,7 @@
     },
     {
       "id": "paintball",
-      "name": "Paintball — King of the Hill",
+      "name": "Paintball \u2014 King of the Hill",
       "description": "The league default: two 90-second games on one hill, the first commanding your whole squad and the second as a lone visitor beside scripted teammates. The two halves are averaged.",
       "game_config": {
         "players": [

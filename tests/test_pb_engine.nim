@@ -19,7 +19,7 @@ suite "decision engine":
       var headers: HttpHeaders
       headers["content-type"] = "application/json"
       let request = engine.client.requestFor(
-        SystemPrompt, userMessage("", engine.seatViewJson(sim, seat, 0, 20)))
+        SystemPrompt, userMessage("", engine.seatViewJson(sim, seat, 0, 20)), 0)
       batch.post(request.url, request.headers, request.body, $seat)
     check batch.len == 2
     check batch[0].tag == "0"
@@ -204,12 +204,12 @@ suite "decision engine":
     let config = defaultGameConfig()
     let bedrock = newLlmClient(config)
     check bedrock.transport == ltBedrock
-    let request = bedrock.requestFor(SystemPrompt, "view")
+    let request = bedrock.requestFor(SystemPrompt, "view", 0)
     check "haiku" in request.url
     check "sonnet" notin request.url
     ## Rotation is not removed, only emptied: BEDROCK_MODEL still pins one.
     putEnv("BEDROCK_MODEL", "us.anthropic.claude-opus-4-1-20250805-v1:0")
-    check "opus" in newLlmClient(config).requestFor(SystemPrompt, "v").url
+    check "opus" in newLlmClient(config).requestFor(SystemPrompt, "v", 0).url
     delEnv("BEDROCK_MODEL")
     delEnv("AWS_ENDPOINT_URL_BEDROCK_RUNTIME")
     delEnv("AWS_BEARER_TOKEN_BEDROCK")

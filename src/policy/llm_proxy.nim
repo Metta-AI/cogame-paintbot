@@ -1,7 +1,7 @@
 ## The policy host's LLM route: OpenAI-compatible chat completions, reached
 ## the way a hosted policy pod reaches a model.
 ##
-##   hosted  POST $AWS_ENDPOINT_URL_BEDROCK_RUNTIME/v1/chat/completions with
+##   hosted  POST $COWORLD_LLM_ENDPOINT/v1/chat/completions with
 ##           `X-Coworld-Player-Slot: <slot>` — the sidecar is the GAME's in a
 ##           game-hosted episode, so the slot header is what attributes spend
 ##           and rate limits to the seat (roles/GAME.md, "Bedrock and AWS").
@@ -26,7 +26,7 @@ import curly, webby
 const
   DefaultTimeoutSeconds = 45
   DefaultMaxCalls = 24
-  SidecarEndpointEnv = "AWS_ENDPOINT_URL_BEDROCK_RUNTIME"
+  SidecarEndpointEnv = "COWORLD_LLM_ENDPOINT"
   OpenRouterUrl = "https://openrouter.ai/api/v1/chat/completions"
   AnthropicUrl = "https://api.anthropic.com/v1/messages"
   AnthropicVersion = "2023-06-01"
@@ -67,7 +67,7 @@ proc newLlmProxy*(slot: int): LlmProxy =
   if timeout.len > 0:
     try: result.timeoutSeconds = parseInt(timeout)
     except ValueError: discard
-  result.modelOverride = getEnv("POLICY_LLM_MODEL")
+  result.modelOverride = getEnv("COWORLD_LLM_MODEL", getEnv("POLICY_LLM_MODEL"))
   let sidecar = getEnv(SidecarEndpointEnv)
   var anthropicKey = getEnv("ANTHROPIC_API_KEY")
   if anthropicKey.len == 0 and getEnv("ANTHROPIC_API_KEY_URI").len > 0:

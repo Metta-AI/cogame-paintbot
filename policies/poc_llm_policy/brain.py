@@ -12,15 +12,14 @@ Selected in this order:
    credentials of its own. The platform runs a per-pod proxy on loopback that
    holds the real identity, and it speaks **OpenAI-compatible chat
    completions**, served by OpenRouter. Selected when
-   ``AWS_ENDPOINT_URL_BEDROCK_RUNTIME`` is present.
+   ``COWORLD_LLM_ENDPOINT`` is present.
 2. **Direct OpenRouter (dev/local).** Selected when ``OPENROUTER_API_KEY`` is
    set and no sidecar endpoint is present.
 3. **Canned.** A fixed response, so the image is testable offline and in CI.
    Forced by ``--canned``.
 
 The happy consequence of (1) and (2) speaking the same protocol: they are the
-*same client class* with a different URL and a different auth header. Only the
-opt-in Bedrock fallback below needs its own code path.
+*same client class* with a different URL and a different auth header.
 
 Live backends are wrapped in :class:`ResilientBrain`: the first completions
 failure of any kind (the sidecar's model-allowlist 403 first among them) is
@@ -44,55 +43,15 @@ import time
 import urllib.error
 import urllib.request
 
-# ── The hosted-platform contract ──────────────────────────────────────────
-# Verified against the metta checkout at commit 9e780b9ff7, plus a read of
-# production (`coworld leagues`) on 2026-08-31.
-#
-# ROUTING IS OPENROUTER, GLOBALLY. devops/app-manifests/values.yaml sets
-# `coworldOpenRouterRouting.enabled: true` with `episodePercent: 100` (a
-# James-authorized ramp to 100% on 2026-08-29 01:08Z, with the full ramp log in
-# that file's comments). Assignment is a deterministic per-episode hash gated by
-# that percent, so at 100% every new episode is routed to OpenRouter. It is NOT
-# a per-league setting: `LeagueSettings`
-# (app_backend/src/metta/app_backend/v2/league_settings_schema.py:158) has no
-# routing field, and the only per-league LLM knob is
-# `settings.llm.player_model_allowlist` (:139-146).
-#
-# The chart default in devops/charts/observatory-backend/values.yaml says
-# `enabled: false, episodePercent: 0`. That is the UNCONFIGURED default, marked
-# "Keep disabled with zero percent until a separately reviewed rollout" — it is
-# not what production runs. Reading it as production is a mistake this file
-# previously made.
-SIDECAR_ENDPOINT_ENV = "AWS_ENDPOINT_URL_BEDROCK_RUNTIME"
-"""Presence of this is THE signal that the hosted LLM proxy is available.
-
-The name is historical -- the sidecar began as a Bedrock proxy and kept the env
-var when OpenRouter routing became the serving path -- so do not read it as
-"Bedrock only". Gate on this rather than ``USE_BEDROCK``, which is also set for
-direct local AWS access with no sidecar in front of it.
-"""
-
-SIDECAR_MODEL_ENV = "BEDROCK_MODEL"
-"""Set from the ``--bedrock-model`` upload flag. Must be read, never hardcoded.
-
-The sidecar resolves whatever string arrives through its legacy-id alias table
-to a canonical OpenRouter slug, then checks it against the model allowlist
-(``resolve_model``,
-app_backend/src/metta/app_backend/job_runner/llm_sidecar.py:260-268), so both a
-legacy Bedrock id and a canonical ``vendor/model`` slug are accepted.
-"""
-
-SIDECAR_PROTOCOL_ENV = "POC_LLM_PROTOCOL"
-"""Escape hatch: set to ``bedrock`` to use the legacy InvokeModel path instead."""
-
+# The platform injects a native endpoint and a canonical OpenRouter model.
+SIDECAR_ENDPOINT_ENV = "COWORLD_LLM_ENDPOINT"
+SIDECAR_MODEL_ENV = "COWORLD_LLM_MODEL"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-
-ANTHROPIC_BEDROCK_VERSION = "bedrock-2023-05-31"
 
 DEFAULT_MODEL = "qwen/qwen3-30b-a3b-instruct-2507"
 """The last-resort default: a cheap, capable open-weights model with JSON mode.
 
-The platform-injected ``BEDROCK_MODEL`` always wins when present; this is used
+The platform-injected ``COWORLD_LLM_MODEL`` always wins when present; this is used
 on the direct-OpenRouter dev path and as the sidecar-path fallback when nothing
 was injected. NOTE it is not necessarily on the platform's allowlist (which
 carries `anthropic/claude-haiku-4.5` and `anthropic/claude-sonnet-4.5`, among
@@ -207,7 +166,7 @@ class OpenAiChatBrain:
     This single class serves BOTH the production and dev paths, because they
     speak the same protocol:
 
-    * hosted -- ``POST $AWS_ENDPOINT_URL_BEDROCK_RUNTIME/v1/chat/completions``
+    * hosted -- ``POST $COWORLD_LLM_ENDPOINT/v1/chat/completions``
       with **no** ``Authorization`` header. The sidecar holds the real
       credential and attributes the call to this pod's own player slot.
     * dev    -- ``POST https://openrouter.ai/api/v1/chat/completions`` with your
@@ -323,75 +282,6 @@ def parse_model_json(text: str) -> dict:
     raise ValueError("no JSON object in model output")
 
 
-class BedrockInvokeBrain:
-    """OPT-IN FALLBACK ONLY -- the legacy Bedrock Runtime `InvokeModel` path.
-
-    James states that OpenRouter routing is the production truth: the sidecar's
-    OpenAI-compatible route is the live path, and production runs
-    `episodePercent: 100`. This class is kept only because the sidecar still
-    accepts the Bedrock shapes, so it is a usable escape hatch if the
-    OpenAI-compatible route ever misbehaves for a specific model.
-
-    It is NOT load-bearing and is never auto-selected. Turn it on deliberately
-    with ``POC_LLM_PROTOCOL=bedrock``.
-
-    Shape: ``POST {endpoint}/model/{model}/invoke`` with an Anthropic Messages
-    body and no ``Authorization`` header. There is no ``response_format`` here,
-    so JSON is forced by prefilling the assistant turn with ``{``.
-    ``requestMetadata`` is deliberately never set -- the sidecar overwrites it
-    with trusted attribution.
-    """
-
-    def __init__(self, endpoint: str, model: str, timeout: float = 30.0) -> None:
-        self.endpoint = endpoint.rstrip("/")
-        self.model = model
-        self.name = f"bedrock-invoke {model}"
-        self.timeout = timeout
-        self.calls = 0
-
-    @property
-    def url(self) -> str:
-        return f"{self.endpoint}/model/{self.model}/invoke"
-
-    def decide(self, summary: str) -> dict:
-        body = json.dumps({
-            "anthropic_version": ANTHROPIC_BEDROCK_VERSION,
-            "max_tokens": 600,
-            "temperature": 0.4,
-            "system": SYSTEM_PROMPT,
-            "messages": [
-                {"role": "user", "content": summary},
-                {"role": "assistant", "content": "{"},
-            ],
-        }).encode("utf-8")
-        request = urllib.request.Request(
-            self.url, data=body,
-            headers={"Content-Type": "application/json",
-                     "Accept": "application/json"},
-            method="POST")
-        try:
-            with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                payload = json.loads(response.read().decode("utf-8"))
-        except urllib.error.HTTPError as error:
-            detail = error.read().decode("utf-8", "replace")[:400]
-            raise BrainError(
-                f"InvokeModel HTTP {error.code} at {self.url}: {detail}") from error
-        except urllib.error.URLError as error:
-            raise BrainError(
-                f"InvokeModel unreachable at {self.url}: {error.reason}") from error
-        self.calls += 1
-        try:
-            text = "".join(block.get("text", "") for block in payload["content"]
-                           if block.get("type") == "text")
-        except (KeyError, TypeError) as error:
-            raise BrainError(f"unexpected InvokeModel response: {payload}") from error
-        text = "{" + text
-        try:
-            return parse_model_json(text)
-        except ValueError as error:
-            raise BrainError(f"model did not return JSON: {text[:400]}") from error
-
-
 class ResilientBrain:
     """Keeps the policy alive when its model cannot be reached or used.
 
@@ -467,8 +357,8 @@ def build_brain(canned: bool, model: str, fallback=None) -> tuple[object, str]:
     :class:`CannedBrain`.
 
     Model precedence on the sidecar path: the platform-injected
-    ``BEDROCK_MODEL`` wins (set per player pod from the upload's
-    ``--bedrock-model`` -- the dispatcher's documented injection seam, see
+    ``COWORLD_LLM_MODEL`` wins (set per player pod from the upload's
+    ``--llm-model`` -- the dispatcher's documented injection seam, see
     metta app_backend job_runner/dispatcher.py and COWORLD_MECHANICS.md);
     ``model`` (usually :data:`DEFAULT_MODEL`) is used only when nothing was
     injected.
@@ -492,11 +382,6 @@ def build_brain(canned: bool, model: str, fallback=None) -> tuple[object, str]:
             sidecar_model = model
             source = (f"{SIDECAR_MODEL_ENV} unset; trying the default "
                       f"model {model}")
-        if os.environ.get(SIDECAR_PROTOCOL_ENV, "").strip().lower() == "bedrock":
-            return (ResilientBrain(BedrockInvokeBrain(endpoint, sidecar_model),
-                                   fallback),
-                    f"hosted sidecar at {endpoint}, legacy InvokeModel path "
-                    f"({SIDECAR_PROTOCOL_ENV}=bedrock, {source})")
         return (ResilientBrain(
                     OpenAiChatBrain(
                         f"{endpoint.rstrip('/')}/v1/chat/completions",

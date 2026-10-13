@@ -8,7 +8,7 @@ The scenario that motivates these: hosted starter pods asked the LLM sidecar
 for a model its allowlist rejects (HTTP 403 model_not_allowed) and exited 1,
 taking ~10 seats per episode with them. The contract under test:
 
-1. the platform-injected ``BEDROCK_MODEL`` wins over the baked-in default,
+1. the platform-injected ``COWORLD_LLM_MODEL`` wins over the baked-in default,
 2. a missing injection falls back to the default instead of refusing to start,
 3. ANY completions failure (the allowlist 403 first among them, but also an
    unreachable sidecar) leaves the policy alive and still emitting playable
@@ -52,7 +52,7 @@ def env(**pairs):
 
 
 # Every test starts from a clean slate: no ambient sidecar/OpenRouter config.
-CLEAN = {"AWS_ENDPOINT_URL_BEDROCK_RUNTIME": None, "BEDROCK_MODEL": None,
+CLEAN = {"COWORLD_LLM_ENDPOINT": None, "COWORLD_LLM_MODEL": None,
          "POC_LLM_PROTOCOL": None, "OPENROUTER_API_KEY": None}
 
 INJECTED = "anthropic/claude-haiku-4.5"
@@ -67,19 +67,19 @@ def entries_of(decision):
 
 
 # ── 1. The injected model wins over the baked-in default ──────────────────
-with env(**{**CLEAN, "AWS_ENDPOINT_URL_BEDROCK_RUNTIME": DEAD_ENDPOINT,
-            "BEDROCK_MODEL": INJECTED}):
+with env(**{**CLEAN, "COWORLD_LLM_ENDPOINT": DEAD_ENDPOINT,
+            "COWORLD_LLM_MODEL": INJECTED}):
     engine, why = brain.build_brain(False, brain.DEFAULT_MODEL)
     assert isinstance(engine, brain.ResilientBrain), why
     assert engine.primary.model == INJECTED, engine.primary.model
-    assert f"BEDROCK_MODEL={INJECTED}" in why, why
+    assert f"COWORLD_LLM_MODEL={INJECTED}" in why, why
 
 # ── 2. No injection: default model is a fallback, never a refusal ─────────
-with env(**{**CLEAN, "AWS_ENDPOINT_URL_BEDROCK_RUNTIME": DEAD_ENDPOINT}):
+with env(**{**CLEAN, "COWORLD_LLM_ENDPOINT": DEAD_ENDPOINT}):
     engine, why = brain.build_brain(False, brain.DEFAULT_MODEL)  # must not raise
     assert isinstance(engine, brain.ResilientBrain), why
     assert engine.primary.model == brain.DEFAULT_MODEL, engine.primary.model
-    assert "BEDROCK_MODEL unset" in why, why
+    assert "COWORLD_LLM_MODEL unset" in why, why
 
     # ...and an UNREACHABLE sidecar degrades instead of killing the policy.
     log = io.StringIO()
@@ -117,8 +117,8 @@ server = HTTPServer(("127.0.0.1", 0), Deny403)
 threading.Thread(target=server.serve_forever, daemon=True).start()
 live_endpoint = f"http://127.0.0.1:{server.server_port}"
 
-with env(**{**CLEAN, "AWS_ENDPOINT_URL_BEDROCK_RUNTIME": live_endpoint,
-            "BEDROCK_MODEL": "qwen/qwen3-30b-a3b-instruct-2507"}):
+with env(**{**CLEAN, "COWORLD_LLM_ENDPOINT": live_endpoint,
+            "COWORLD_LLM_MODEL": "qwen/qwen3-30b-a3b-instruct-2507"}):
     engine, why = brain.build_brain(False, brain.DEFAULT_MODEL)
     log = io.StringIO()
     with contextlib.redirect_stdout(log):
@@ -138,8 +138,8 @@ with env(**{**CLEAN, "AWS_ENDPOINT_URL_BEDROCK_RUNTIME": live_endpoint,
     assert engine.calls == 0  # no completed model call
 
 # ── 4. A persona fallback rides the same wrapper (starter path) ───────────
-with env(**{**CLEAN, "AWS_ENDPOINT_URL_BEDROCK_RUNTIME": live_endpoint,
-            "BEDROCK_MODEL": "qwen/qwen3-30b-a3b-instruct-2507"}):
+with env(**{**CLEAN, "COWORLD_LLM_ENDPOINT": live_endpoint,
+            "COWORLD_LLM_MODEL": "qwen/qwen3-30b-a3b-instruct-2507"}):
     class ScriptedFallback:
         name = "scripted-test"
 
@@ -207,8 +207,8 @@ fenced_server = HTTPServer(("127.0.0.1", 0), FencedJson)
 threading.Thread(target=fenced_server.serve_forever, daemon=True).start()
 fenced_endpoint = f"http://127.0.0.1:{fenced_server.server_port}"
 
-with env(**{**CLEAN, "AWS_ENDPOINT_URL_BEDROCK_RUNTIME": fenced_endpoint,
-            "BEDROCK_MODEL": INJECTED}):
+with env(**{**CLEAN, "COWORLD_LLM_ENDPOINT": fenced_endpoint,
+            "COWORLD_LLM_MODEL": INJECTED}):
     engine, why = brain.build_brain(False, brain.DEFAULT_MODEL)
     log = io.StringIO()
     with contextlib.redirect_stdout(log):

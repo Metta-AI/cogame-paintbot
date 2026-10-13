@@ -12,7 +12,6 @@ services:
     build:
       context: *game_context
       dockerfile: Dockerfile
-      network: host
       args:
         NimFlags: ${GAME_NIM_FLAGS:--d:release -d:useMalloc --threads:on --opt:speed --stackTrace:on}
         SIM_SOURCES_STAMP: ${SIM_SOURCES_STAMP:-}

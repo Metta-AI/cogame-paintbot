@@ -34,8 +34,7 @@ import
   test_pb_identity_privacy,
   test_pb_perf,
   test_pb_shouts,
-  test_pb_viewer
+  test_pb_viewer,
+  test_hosted_llm,
+  test_policy_llm_proxy
 {.warning[UnusedImport]: on.}
-
-import test_hosted_llm
-import test_policy_llm_proxy
